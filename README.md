@@ -3,6 +3,13 @@ Install 'The Haskell Tool Stack' from https://docs.haskellstack.org/en/stable/RE
 ```
 stack setup
 ```
+Install hlint
+```
+stack hlint
+```
+```
+stack stylish-haskell
+```
 # Run project (interactive mode)
 ```
 stack ghci
@@ -11,6 +18,3 @@ stack ghci
 ```
 stack test
 ```
-
-
-
