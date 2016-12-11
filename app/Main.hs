@@ -1,8 +1,7 @@
 module Main where
 
-import           Cell
-import           Lib
+import Cell
 
 
 main :: IO ()
-main = putStrLn $ show $  Cell (CellCord 1 2) (SUMFunc (RangeParam (CellCord 1 2) (CellCord 1 3))) "SUM(A2:A3)"
+main = print $  Cell (CellCord 1 2) (SUMFunc [RangeParam (CellCord 1 2) (CellCord 1 3)]) "SUM(A2:A3)"

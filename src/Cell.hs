@@ -19,7 +19,7 @@ data FuncParam = RangeParam CellCord CellCord | ListParam [CellCord] deriving Sh
 -- StringCont - napis
 -- NumberCont - liczba
 -- SUMFunc - funckja sumy
-data CellContent = StringCont String | NumberCont Int | SUMFunc FuncParam | MULFunc FuncParam | AVGFunc FuncParam deriving Show
+data CellContent = StringCont String | NumberCont Int | SUMFunc [FuncParam] | MULFunc [FuncParam] | AVGFunc [FuncParam] deriving Show
 
 -- pełna komórka
 -- CellCord - położenie
