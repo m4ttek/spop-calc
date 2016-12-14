@@ -30,8 +30,11 @@ createFile :: String -> IO ()
 readRawCSV sep path = do csvRawString <- readFile path
                          return (map (splitOn (separatorToChar sep)) (splitOn "\n" csvRawString))
 
-writeRawCSV sep path tab = writeFile path (drop 2
-                                            (foldl (\x y -> x ++ (case x of "\n" -> ""; otherwise -> (separatorToChar sep)) ++ y) ""
+writeRawCSV sep path tab = writeFile path (tail
+                                            (foldr (\x y -> x ++
+                                                             (case x of "\n" -> ""
+                                                                        _ -> (separatorToChar sep))
+                                                              ++ y) ""
                                               (foldl (\x y -> x ++ ["\n"] ++ y) [] tab)))
 
 createFile path = do handle <- openFile path ReadWriteMode
