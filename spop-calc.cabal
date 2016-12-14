@@ -18,7 +18,9 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
                      , Cell
+                     , IOUtil
   build-depends:       base >= 4.7 && < 5
+                     , split == 0.2.3.1
   default-language:    Haskell2010
 
 executable spop-calc-exe

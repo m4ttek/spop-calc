@@ -1,6 +1,7 @@
 module Main where
 
-import Cell
+import           Cell
+import           IOUtil
 
 
 main :: IO ()
