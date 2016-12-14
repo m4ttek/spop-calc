@@ -1,7 +1,9 @@
 module Cell (
     CellCord (CellCord),
     FuncParam (RangeParam, ListParam),
-    CellContent (StringCont, NumberCont, SUMFunc, MULFunc, AVGFunc),
+    NumberType (Int, Double),
+    FuncName (SUMFunc, MULFunc, AVGFunc),
+    CellContent(FuncCell, NumberCell, StringCell, ErrorCell),
     Cell (Cell)
 ) where
 
@@ -15,11 +17,16 @@ data CellCord = CellCord Int Int deriving (Eq, Show)
 -- ListParam - lista komórek
 data FuncParam = RangeParam CellCord CellCord | ListParam [CellCord] deriving Show
 
+data NumberType = Int | Double deriving Show
+data FuncName = SUMFunc | MULFunc  | AVGFunc deriving (Eq, Show)
+
+
 -- zawartość (coś ala typ + dane)
 -- StringCont - napis
--- NumberCont - liczba
+-- IntCont - liczba całkowita
+-- DoubleCont - liczba zmiennno przecinkowa
 -- SUMFunc - funckja sumy
-data CellContent = StringCont String | NumberCont Int | SUMFunc [FuncParam] | MULFunc [FuncParam] | AVGFunc [FuncParam] deriving Show
+data CellContent = FuncCell FuncName [FuncParam] | NumberCell NumberType | StringCell String | ErrorCell String deriving Show
 
 -- pełna komórka
 -- CellCord - położenie
