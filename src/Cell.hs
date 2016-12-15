@@ -1,6 +1,6 @@
 module Cell (
     CellCord (CellCord),
-    FuncParam (RangeParam, ListParam),
+    FuncParam (RangeParam, OneCell),
     NumberType (Int, Double),
     FuncName (SUMFunc, MULFunc, AVGFunc),
     CellContent(FuncCell, NumberCell, StringCell, ErrorCell),
@@ -15,7 +15,7 @@ data CellCord = CellCord Int Int deriving (Eq, Show)
 -- argument funckji
 -- RangeParam - zakres
 -- ListParam - lista komórek
-data FuncParam = RangeParam CellCord CellCord | ListParam [CellCord] deriving Show
+data FuncParam = RangeParam CellCord CellCord | OneCell CellCord deriving (Eq, Show)
 
 data NumberType = Int | Double deriving Show
 data FuncName = SUMFunc | MULFunc  | AVGFunc deriving (Eq, Show)

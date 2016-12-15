@@ -1,14 +1,16 @@
 module CellParser
-    ( parseCell, pFuncName, parseCellCord, columnToNumber
+    ( parseCell, pFuncName, parseCellCord, columnToNumber, parseRange, parseFuncArgs
     ) where
 
 import Cell
 import Data.Char
+
 import Text.Parsec
 import Text.Parsec.Char
 import Text.Parsec.String
+import Text.Parsec.Token
 import Text.Parsec.Combinator
-import Control.Monad (liftM)
+
 
 parseCell :: String -> CellContent
 parseCell x = StringCell x
@@ -43,6 +45,25 @@ parseCellCord = do
                   let column = columnToNumber a
                   let row = digitsToNumber b
                   return (CellCord column row)
+
+parseOneCell :: GenParser Char st FuncParam
+parseOneCell = do
+                 cell <- parseCellCord
+                 return (OneCell cell)
+
+parseRange :: GenParser Char st FuncParam
+parseRange = do 
+               firstCell <- parseCellCord
+               char ':'
+               secondCell <- parseCellCord
+               return (RangeParam firstCell secondCell)
+
+parseFuncArgs :: GenParser Char st [FuncParam]
+parseFuncArgs = do 
+                  char '('
+                  result <- ((try parseRange <|> parseOneCell) `sepBy` (char ';'))
+                  char ')'
+                  return result
 
 
 {-
