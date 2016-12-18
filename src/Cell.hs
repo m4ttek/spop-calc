@@ -3,6 +3,7 @@ module Cell (
     FuncParam (RangeParam, OneCell),
     NumberType (IntVal, DecimalVal),
     FuncName (SUMFunc, MULFunc, AVGFunc),
+    ErrorType (ParseFail, CyclicDependency),
     CellContent(FuncCell, NumberCell, StringCell, ErrorCell),
     Cell (Cell)
 ) where
@@ -17,18 +18,24 @@ data CellCord = CellCord Int Int deriving (Eq, Show)
 -- ListParam - lista komórek
 data FuncParam = RangeParam CellCord CellCord | OneCell CellCord deriving (Eq, Show)
 
-
+-- rodzaj liczby
+-- IntVal - całkowita
+-- DecimalVal - stało przecinkowa
 data NumberType = IntVal Int | DecimalVal Rational deriving (Eq, Show)
+
+-- funkcja
 data FuncName = SUMFunc | MULFunc | AVGFunc deriving (Eq, Show)
+
+-- rodzaj błędu
+data ErrorType = ParseFail | CyclicDependency  deriving (Eq, Show)
 
 
 -- zawartość (coś ala typ + dane)
--- FuncCell
+-- FuncCell - funkcja
 -- StringCont - napis
--- IntCont - liczba całkowita
--- DoubleCont - liczba zmiennno przecinkowa
--- SUMFunc - funckja sumy
-data CellContent = FuncCell FuncName [FuncParam] | NumberCell NumberType | StringCell String | ErrorCell String deriving (Eq, Show)
+-- NumberCont - liczba
+-- ErrorCell - błąd
+data CellContent = FuncCell FuncName [FuncParam] | NumberCell NumberType | StringCell String | ErrorCell ErrorType String deriving (Eq, Show)
 
 -- pełna komórka
 -- CellCord - położenie
