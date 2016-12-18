@@ -1,3 +1,7 @@
+module CellParserTest
+    ( parseTests
+    ) where
+
 
 import           Cell
 import           CellParser
@@ -19,7 +23,7 @@ testFuncNotParsed :: Parsec String () a -> String -> Test
 testFuncNotParsed parser toParse = let parseResult = parse parser "" toParse
                                    in TestCase (assertBool "isLeft" (isLeft parseResult))
 
-tests = TestList [TestLabel "sumFunc" (testFuncParsed parseFuncName "sum" SUMFunc)
+parseTests = TestList [TestLabel "sumFunc" (testFuncParsed parseFuncName "sum" SUMFunc)
                  ,TestLabel "avgFunc" (testFuncParsed parseFuncName "mul" MULFunc)
                  ,TestLabel "mulFunc" (testFuncParsed parseFuncName "avg" AVGFunc)
                  ,TestLabel "failTest" (testFuncNotParsed parseFuncName "adam")
@@ -59,6 +63,4 @@ tests = TestList [TestLabel "sumFunc" (testFuncParsed parseFuncName "sum" SUMFun
                                                       (DecimalVal $ approxRational (read "3123.323" :: Double) 0.0000001)) --kijowe rozwiaznie
                                                        ]
 
-main :: IO Counts
-main = do runTestTT tests
 
