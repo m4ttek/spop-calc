@@ -41,4 +41,4 @@ data CellContent = FuncCell FuncName [FuncParam] | NumberCell NumberType | Strin
 -- CellCord - położenie
 -- CellContent - zawartość przetworzona
 -- String - napis oryginalny
-data Cell = Cell CellCord CellContent String deriving Show
+data Cell = Cell CellCord CellContent String deriving (Eq, Show)
