@@ -1,22 +1,31 @@
 module CellParser
-    ( parseCell, pFuncName, parseCellCord, columnToNumber, parseRange, parseFuncArgs
+    ( parseCell,
+      parseFuncName,
+      parseCellCord,
+      columnToNumber,
+      parseRange,
+      parseFuncArgs,
+      parseFunc,
+      parseInt,
+      parseDecimal
     ) where
 
-import Cell
-import Data.Char
+import           Cell
+import           Data.Char
+import           Data.Ratio
 
-import Text.Parsec
-import Text.Parsec.Char
-import Text.Parsec.String
-import Text.Parsec.Token
-import Text.Parsec.Combinator
+import           Text.Parsec
+import           Text.Parsec.Char
+import           Text.Parsec.Combinator
+import           Text.Parsec.String
+import           Text.Parsec.Token
 
 
 parseCell :: String -> CellContent
-parseCell x = StringCell x
+parseCell = StringCell
 
-pFuncName :: GenParser Char st FuncName
-pFuncName = SUMFunc <$ string "sum"
+parseFuncName :: GenParser Char st FuncName
+parseFuncName = SUMFunc <$ string "sum"
             <|> MULFunc <$ string "mul"
             <|> AVGFunc <$ string "avg"
             <?> "function name"
@@ -32,10 +41,10 @@ alphSize = ord 'z' - ord 'a' + 1
 
 
 columnToNumber :: String -> Int
-columnToNumber letters = foldl (\x y -> x * alphSize + numOfChar y) 0 letters 
+columnToNumber = foldl (\x y -> x * alphSize + numOfChar y) 0
 
 digitsToNumber :: String -> Int
-digitsToNumber digits = foldl (\x y -> x * 10 + digitValue y) 0 digits
+digitsToNumber = foldl (\x y -> x * 10 + digitValue y) 0
 
 
 parseCellCord :: GenParser Char st CellCord
@@ -52,25 +61,44 @@ parseOneCell = do
                  return (OneCell cell)
 
 parseRange :: GenParser Char st FuncParam
-parseRange = do 
+parseRange = do
                firstCell <- parseCellCord
                char ':'
                secondCell <- parseCellCord
                return (RangeParam firstCell secondCell)
 
 parseFuncArgs :: GenParser Char st [FuncParam]
-parseFuncArgs = do 
-                  char '('
-                  result <- ((try parseRange <|> parseOneCell) `sepBy` (char ';'))
-                  char ')'
-                  return result
+parseFuncArgs = do char '('
+                   result <- (try parseRange <|> parseOneCell) `sepBy` char ';'
+                   char ')'
+                   return result
+
+-- parsuje wyrażenie -funkcje po znaku =
+parseFunc :: GenParser Char st CellContent
+parseFunc = do funcName <- parseFuncName
+               funcParams <- parseFuncArgs
+               return (FuncCell funcName funcParams)
+
+
+parseInt :: GenParser Char st NumberType
+parseInt = do a <- many1 digit
+              return (IntVal $ digitsToNumber a)
+
+parseDecimal :: GenParser Char st NumberType
+parseDecimal = do afterDot <- many1 digit
+                  char '.'
+                  beforeDot <- many1 digit
+                  let afterVal = digitsToNumber afterDot
+                  let beforeVal = (fromIntegral $ digitsToNumber beforeDot) / 10 ^ length beforeDot
+                  return (DecimalVal (fromIntegral afterVal + beforeVal))
+
 
 
 {-
 
-cell = func_cell | num_cell | string_cell 
+cell = func_cell | num_cell | string_cell
 func_cell = '=' func_name ( params* )
-position = [A-Z]* [0-9]* 
+position = [A-Z]* [0-9]*
 range = position ':' position
 param = position | range
 params = params (';' params)*
@@ -78,7 +106,7 @@ num_cell = int_cell  | double_cell
 int_cell = [0-9]*
 double_cell = [0-9]* '.' [0-9]*
 
-- nie trzeba tego defakto parsować bo to jest 
+- nie trzeba tego defakto parsować bo to jest
 - skutek niesparsowania pozostałych
 string_cell = nie num_cell i nie func_cell
 -}

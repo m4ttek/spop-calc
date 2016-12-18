@@ -37,7 +37,7 @@ executable spop-calc-exe
 test-suite spop-calc-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  main-is:             Spec.hs
+  main-is:             CellParserTest.hs
   build-depends:       base
                      , HUnit
                      , parsec == 3.1.8
