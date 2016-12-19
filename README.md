@@ -21,3 +21,20 @@ stack ghci
 ```
 stack test
 ```
+# Web application
+```
+cd web
+```
+Install yesod framework
+```
+stack build yesod-bin cabal-install --install-ghc
+```
+Build libraries
+```
+stack build
+```
+Start "JRebel" like development
+```
+stack exec -- yesod devel
+```
+View site at http://localhost:3000/
