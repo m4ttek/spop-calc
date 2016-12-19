@@ -1,0 +1,47 @@
+
+<!-- Static navbar -->
+<nav .navbar.navbar-default.navbar-static-top>
+    <div .container-fluid>
+        <div .navbar-header>
+            <a .navbar-brand href="#">
+                SPOP-calc
+            
+        <div #navbar>
+            <ul .nav.navbar-nav.navbar-right>
+                <li .navbar-label>
+                    <p .navbar-text>
+                            Upload File
+                <li>
+                    <form .navbar-form>    
+                        <button type="button" .btn.btn-default aria-label="Left Align">
+                            <span aria-hidden="true" .glyphicon.glyphicon-upload>
+                <li .navbar-label>
+                    <p .navbar-text>
+                            Download File
+                <li>
+                    <form .navbar-form>
+                        <button type="button" .btn.btn-default aria-label="Left Align">
+                            <span aria-hidden="true" .glyphicon.glyphicon-download>
+
+
+<!-- Page Contents -->
+
+<div .container>
+    $if not $ Just HomeR == mcurrentRoute
+        <ul .breadcrumb>
+            $forall bc <- parents
+                <li>
+                    <a href="@{fst bc}">#{snd bc}
+
+            <li .active>#{title}
+
+    $maybe msg <- mmsg
+      <div .alert.alert-info #message>#{msg}
+
+^{widget}
+
+<!-- Footer -->
+<footer .footer>
+    <div .container>
+        <p .text-muted>
+            #{appCopyright $ appSettings master}

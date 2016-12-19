@@ -1,0 +1,5 @@
+<div .container>
+    <div .row>
+        <div .col-lg-12>
+            <div .bs-callout bs-callout-info well>
+                To start, please upload csv file.
