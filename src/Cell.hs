@@ -2,12 +2,15 @@ module Cell (
     CellCord (CellCord),
     FuncParam (RangeParam, OneCell),
     FuncParams,
-    doesParamContainsCord,
     NumberType (IntVal, DecimalVal),
     FuncName (SUMFunc, MULFunc, AVGFunc),
     ErrorType (ParseFail, CyclicDependency),
     CellContent(FuncCell, NumberCell, StringCell, ErrorCell),
     Cell (Cell),
+    getCellContent,
+    getCellOrigin,
+    isFuncCell,
+    doesParamContainsCord,
     containsCord
 ) where
 
@@ -52,12 +55,24 @@ data CellContent = FuncCell FuncName FuncParams | NumberCell NumberType | String
 -- String - napis oryginalny
 data Cell = Cell CellContent String deriving (Eq, Show)
 
-
  -- funkcje
+getCellContent :: Cell -> CellContent
+getCellContent (Cell content _) = content
+
+getCellOrigin :: Cell -> String
+getCellOrigin (Cell _ origin) = origin
+
+isFuncCell :: Cell -> Bool
+isFuncCell (Cell (FuncCell _ _) _) = True
+isFuncCell _                       = False
+
+getParamCells :: FuncParam -> [CellCord]
+getParamCells (OneCell cord)                    = [cord]
+getParamCells (RangeParam firstCord secondCord) = []
 
 
 doesParamContainsCord :: CellCord -> FuncParam -> Bool
-doesParamContainsCord cord (RangeParam x y) 
+doesParamContainsCord cord (RangeParam x y)
 -- można to przerobic na highorder function ale będzie w kij nieczytelne (chyba)
     = let insideColumn = if getColumn x > getColumn y then --kolumna x wieksza niz y
                             getColumn cord >= getColumn y && getColumn cord <= getColumn x

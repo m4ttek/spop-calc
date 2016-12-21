@@ -114,8 +114,7 @@ parseAll = do result <- many (noneOf "\n")
 
 -- parsuje komórke + ignoruje bledy
 parseCellWithErrors = do char '='
-                         func <- parseFunc
-                         return func
+                         parseFunc
                       <|> try parseNumber
                       <|> parseAll
 
@@ -126,8 +125,8 @@ wrapError :: ParseError -> CellContent
 wrapError pError = ErrorCell ParseFail (errorToStr pError)
 
 parseCellContent :: String -> CellContent
-parseCellContent content = let parseInput x = parse parseCellWithErrors "" x
-                           in either (\x -> wrapError x) id (parseInput $ map toLower content)
+parseCellContent content = let parseInput = parse parseCellWithErrors ""
+                           in either wrapError id (parseInput $ map toLower content)
 
 parseCell :: String -> Cell
 parseCell cellStr = Cell (parseCellContent cellStr) cellStr

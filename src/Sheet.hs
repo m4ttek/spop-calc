@@ -15,7 +15,7 @@ import           CellParser
 -- width height
 data Dim = Dim Int Int deriving (Show, Eq)
 
-createDim width height = Dim width height
+createDim = Dim
 
 class Measurable a where
     getWidth :: a -> Int
@@ -33,6 +33,9 @@ data Sheet = Sheet Dim SheetContent deriving (Show, Eq)
 
 getCells :: Sheet -> SheetContent
 getCells (Sheet _ cells) = cells
+
+getCell :: Sheet -> CellCord -> Cell
+getCell sheet (CellCord col row) = getCells sheet !! (col - 1) !! (row - 1)
 
 instance Measurable Sheet where
     getWidth (Sheet x _) = getWidth x
@@ -55,6 +58,18 @@ sheetListToContent parsedCells originCells width height
 -- zamienia [[]] na listę [[CellContent]]
 parseSheet :: [[String]] -> [[Cell]]
 parseSheet = map (map parseCell)
+
+
+funcCyclicCheck :: CellContent -> Sheet -> Bool
+funcCyclicCheck (FuncCell _ params) sheet = False
+funcCyclicCheck _ _                       = error "Invalid input"
+
+hasCellCyclicDep :: CellCord -> Sheet -> Bool
+hasCellCyclicDep cord sheet = let cell = getCell sheet cord
+                              in isFuncCell cell && funcCyclicCheck (getCellContent cell) sheet
+
+fixCyclicDeps :: Sheet -> Sheet
+fixCyclicDeps x = x
 
 
 -- wczytuje arkusz z tablicy stringów
