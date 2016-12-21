@@ -9,15 +9,19 @@ import           Cell
 import           Test.HUnit
 
 
-yesOneCellTest = TestCase (assertBool "contains" (containsCord (CellCord 2 2) [(OneCell $ CellCord 2 2)]))
-noOneCellTest = TestCase (assertBool "doesntContain" (not (containsCord (CellCord 2 2) [(OneCell $ CellCord 3 3)])))
-yesRangeCellTest = TestCase (assertBool "contains" (containsCord (CellCord 2 2) [(RangeParam (CellCord 1 1) (CellCord 3 3))]))
-noRangeCellTest = TestCase (assertBool "doesntContain" (not (containsCord (CellCord 3 4) [(RangeParam (CellCord 1 1) (CellCord 3 3))])))
+yesOneCellTest = TestCase (assertBool "contains" (containsCord (CellCord 2 2) [OneCell $ CellCord 2 2]))
+noOneCellTest = TestCase (assertBool "doesntContain" (not (containsCord (CellCord 2 2) [OneCell $ CellCord 3 3])))
+yesRangeCellTest = TestCase (assertBool "contains" (containsCord (CellCord 2 2) [RangeParam (CellCord 1 1) (CellCord 3 3)]))
+noRangeCellTest = TestCase (assertBool "doesntContain" (not (containsCord (CellCord 3 4) [RangeParam (CellCord 1 1) (CellCord 3 3)])))
+
+
+generateParamsTest = getParamCells (RangeParam (CellCord 1 1) (CellCord 2 2)) ~?= [CellCord 1 1, CellCord 1 2, CellCord 2 1, CellCord 2 2]
 
 
 cellTests = TestList [TestLabel "oneCellYes" yesOneCellTest
                       ,TestLabel "oneCellNo" noOneCellTest
                       ,TestLabel "rangeYes" yesRangeCellTest
-                      ,TestLabel "rangeNo" noRangeCellTest]
-                 
+                      ,TestLabel "rangeNo" noRangeCellTest
+                      ,TestLabel "generateCord" generateParamsTest]
+
 

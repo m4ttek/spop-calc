@@ -1,16 +1,23 @@
 module Sheet (
     Sheet (Sheet),
     Dim (Dim),
+    getCell,
     getCells,
     getWidth, getHeight,
     createEmptySheet,
-    readShet,
-    parseSheet
+    readSheet,
+    parseSheet,
+    funcCyclicCheck,
+    hasCellCyclicDep,
+    sheetContentWithCords,
+    fixCyclicDeps
 ) where
 
 import           Cell
 import           CellParser
---import           Data.Array
+
+import           Debug.Trace
+
 
 -- width height
 data Dim = Dim Int Int deriving (Show, Eq)
@@ -35,7 +42,7 @@ getCells :: Sheet -> SheetContent
 getCells (Sheet _ cells) = cells
 
 getCell :: Sheet -> CellCord -> Cell
-getCell sheet (CellCord col row) = getCells sheet !! (col - 1) !! (row - 1)
+getCell sheet (CellCord col row) = getCells sheet !! (row - 1) !! (col - 1)
 
 instance Measurable Sheet where
     getWidth (Sheet x _) = getWidth x
@@ -49,7 +56,7 @@ createEmptySheet width height = let createRow rowNum = [Cell (StringCell "") "" 
 
 sheetListToContent :: [[CellContent]] -> [[String]] -> Int -> Int -> Sheet
 sheetListToContent parsedCells originCells width height
-                  = let getCell tab x y = (tab !! (x - 1)) !! (y - 1)
+                  = let getCell tab x y = (tab !! (y - 1) !! (x - 1))
                         createRow rowNum = [Cell (getCell parsedCells columnNum rowNum)
                                                  (getCell originCells columnNum rowNum) | columnNum <- [1..height]]
                         array = [createRow rowNum | rowNum <- [1..width]]
@@ -60,23 +67,38 @@ parseSheet :: [[String]] -> [[Cell]]
 parseSheet = map (map parseCell)
 
 
-funcCyclicCheck :: CellContent -> Sheet -> Bool
-funcCyclicCheck (FuncCell _ params) sheet = False
-funcCyclicCheck _ _                       = error "Invalid input"
+funcCyclicCheck :: CellCord -> CellContent -> Sheet -> Bool
+funcCyclicCheck cord (FuncCell _ params) sheet = let -- [Cell]
+                                                     allSuspectCells = [getCell sheet cord | cord <- concatMap getParamCells params] -- wyciagnij cords i sklej ++
+                                                     -- [Cell] (FuncCell)
+                                                     funcSuspectCells = filter isFuncCell allSuspectCells
+                                                     getParms (FuncCell _ params) = params
+                                                     cyclicCells = filter (containsCord cord . getParms) (map getCellContent funcSuspectCells)
+                                                 in not $ null cyclicCells
+funcCyclicCheck _ _ _                       = error "Invalid input"
 
 hasCellCyclicDep :: CellCord -> Sheet -> Bool
 hasCellCyclicDep cord sheet = let cell = getCell sheet cord
-                              in isFuncCell cell && funcCyclicCheck (getCellContent cell) sheet
+                              in isFuncCell cell && funcCyclicCheck cord (getCellContent cell) sheet
+
+sheetContentWithCords :: Sheet -> [[(CellCord, Cell)]]
+sheetContentWithCords sheet = let cells = getCells sheet
+                                  rowsWithNum = zip [1..(getHeight sheet)] cells -- [(rowNum, [rowConent])]
+                                  cellWithCord rowWithNum = zipWith (\cell col-> (CellCord col (fst rowWithNum), cell)) (snd rowWithNum) [1..(getWidth sheet)]
+                              in map cellWithCord rowsWithNum
 
 fixCyclicDeps :: Sheet -> Sheet
-fixCyclicDeps x = x
+fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsInRow x = if hasCellCyclicDep (fst x) sheet then
+                                                                       Cell (ErrorCell CyclicDependency "cyclic dependency") (getCellOrigin (snd x))
+                                                                     else snd x
+                                          in Sheet dim [map fixCyclicDepsInRow row | row <- sheetContentWithCords sheet]
 
 
 -- wczytuje arkusz z tablicy stringów
 -- -> wiersz []
 -- -> kolumna [[]]
-readShet :: [[String]] -> Sheet
-readShet cells = let height = length cells
-                     width | height == 0 = 0
-                           | otherwise = length $ head cells
-                 in Sheet (createDim width height) (parseSheet cells)
+readSheet :: [[String]] -> Sheet
+readSheet cells = let height = length cells
+                      width | height == 0 = 0
+                            | otherwise = length $ head cells
+                  in fixCyclicDeps $ Sheet (createDim width height) (parseSheet cells)

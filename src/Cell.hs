@@ -9,6 +9,7 @@ module Cell (
     Cell (Cell),
     getCellContent,
     getCellOrigin,
+    getParamCells,
     isFuncCell,
     doesParamContainsCord,
     containsCord
@@ -66,22 +67,29 @@ isFuncCell :: Cell -> Bool
 isFuncCell (Cell (FuncCell _ _) _) = True
 isFuncCell _                       = False
 
+_start :: (CellCord -> Int) -> FuncParam -> Int
+_start geter (RangeParam x y) = min (geter x) (geter y)
+_end :: (CellCord -> Int) -> FuncParam -> Int
+_end geter (RangeParam x y) = max (geter x) (geter y)
+
+_in :: (CellCord -> Int) -> CellCord -> FuncParam -> Bool
+_in geter cord rangeParam@(RangeParam x y) = geter cord >= _start geter rangeParam && geter cord <= _end geter rangeParam
+_in geter cord (OneCell x) = geter cord == geter x
+
+_getRange :: (CellCord -> Int) -> FuncParam -> [Int]
+_getRange geter rangeParam@(RangeParam firstCord secondCord) = [(_start geter rangeParam)..(_end geter rangeParam)]
+
+
+
 getParamCells :: FuncParam -> [CellCord]
 getParamCells (OneCell cord)                    = [cord]
-getParamCells (RangeParam firstCord secondCord) = []
-
+getParamCells rangeParam@(RangeParam firstCord secondCord)
+    = [CellCord col row | col <- _getRange getColumn rangeParam, row <- _getRange getRow rangeParam]
 
 doesParamContainsCord :: CellCord -> FuncParam -> Bool
-doesParamContainsCord cord (RangeParam x y)
--- można to przerobic na highorder function ale będzie w kij nieczytelne (chyba)
-    = let insideColumn = if getColumn x > getColumn y then --kolumna x wieksza niz y
-                            getColumn cord >= getColumn y && getColumn cord <= getColumn x
-                         else -- kolumna y wieksza niz x
-                            getColumn cord >= getColumn x && getColumn cord <= getColumn y
-          insideRow = if getRow x > getRow y then
-                         getRow cord >= getRow y && getRow cord <= getRow x
-                      else
-                         getRow cord >= getRow x && getRow cord <= getRow y
+doesParamContainsCord cord rangeParam@(RangeParam x y)
+    = let insideColumn = _in getColumn cord rangeParam
+          insideRow = _in getRow cord rangeParam
      in insideColumn && insideRow
 doesParamContainsCord cord (OneCell x) = getColumn cord == getColumn x && getRow cord == getRow x
 
