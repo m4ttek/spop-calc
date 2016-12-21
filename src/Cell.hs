@@ -48,10 +48,9 @@ type FuncParams = [FuncParam]
 data CellContent = FuncCell FuncName FuncParams | NumberCell NumberType | StringCell String | ErrorCell ErrorType String deriving (Eq, Show)
 
 -- pełna komórka
--- CellCord - położenie
 -- CellContent - zawartość przetworzona
 -- String - napis oryginalny
-data Cell = Cell CellCord CellContent String deriving (Eq, Show)
+data Cell = Cell CellContent String deriving (Eq, Show)
 
 
  -- funkcje

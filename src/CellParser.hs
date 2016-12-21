@@ -1,5 +1,6 @@
 module CellParser
     ( parseCell,
+      parseCellContent,
       parseFuncName,
       parseCellCord,
       columnToNumber,
@@ -124,10 +125,12 @@ errorToStr pError = intercalate " " $ map messageString $ errorMessages pError
 wrapError :: ParseError -> CellContent
 wrapError pError = ErrorCell ParseFail (errorToStr pError)
 
-parseCell :: String -> CellContent
-parseCell content = let parseInput x = parse parseCellWithErrors "" x
-                    in either (\x -> wrapError x) id (parseInput $ map toLower content)
+parseCellContent :: String -> CellContent
+parseCellContent content = let parseInput x = parse parseCellWithErrors "" x
+                           in either (\x -> wrapError x) id (parseInput $ map toLower content)
 
+parseCell :: String -> Cell
+parseCell cellStr = Cell (parseCellContent cellStr) cellStr
 
 
 

@@ -15,7 +15,7 @@ main = do
            , SetColor Foreground Vivid Red
            ]
     putStr $ show $ parseCell "SUM(A2:A3)"
-    putStr $ show $  Cell (CellCord 1 2) (FuncCell SUMFunc [RangeParam (CellCord 1 2) (CellCord 1 3)]) "SUM(A2:A3)"
+    putStr $ show $  Cell (FuncCell SUMFunc [RangeParam (CellCord 1 2) (CellCord 1 3)]) "SUM(A2:A3)"
     setSGR [Reset]
 
     
