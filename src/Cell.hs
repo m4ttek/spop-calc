@@ -9,11 +9,17 @@ module Cell (
     Cell (Cell),
     getCellContent,
     getCellOrigin,
-    getParamCells,
+    getFuncParamCords,
     isFuncCell,
     doesParamContainsCord,
-    containsCord
+    containsCord,
+    getNumValue,
+    sumNT,
+    mulNT,
+    divNT
 ) where
+
+import           Data.Ratio
 
 -- położenie (0,0) to lewy górny róg
 -- x - kolumna
@@ -34,7 +40,7 @@ data FuncParam = RangeParam CellCord CellCord | OneCell CellCord deriving (Eq, S
 -- rodzaj liczby
 -- IntVal - całkowita
 -- DecimalVal - stało przecinkowa
-data NumberType = IntVal Int | DecimalVal Rational deriving (Eq, Show)
+data NumberType = IntVal Integer | DecimalVal Rational deriving (Eq, Show)
 
 -- funkcja
 data FuncName = SUMFunc | MULFunc | AVGFunc deriving (Eq, Show)
@@ -49,7 +55,7 @@ type FuncParams = [FuncParam]
 -- StringCont - napis
 -- NumberCont - liczba
 -- ErrorCell - błąd
-data CellContent = FuncCell FuncName FuncParams | NumberCell NumberType | StringCell String | ErrorCell ErrorType String deriving (Eq, Show)
+data CellContent = FuncCell FuncName FuncParams (Maybe NumberType) | NumberCell NumberType | StringCell String | ErrorCell ErrorType String deriving (Eq, Show)
 
 -- pełna komórka
 -- CellContent - zawartość przetworzona
@@ -57,16 +63,21 @@ data CellContent = FuncCell FuncName FuncParams | NumberCell NumberType | String
 data Cell = Cell CellContent String deriving (Eq, Show)
 
  -- funkcje
+
+-- zwraca treść (sparsowaną) komórki
 getCellContent :: Cell -> CellContent
 getCellContent (Cell content _) = content
 
+-- zwraca treść komórki wpisaną przez użytkownika
 getCellOrigin :: Cell -> String
 getCellOrigin (Cell _ origin) = origin
 
+-- sprawdza czy komórka zawiera funkcję
 isFuncCell :: Cell -> Bool
-isFuncCell (Cell (FuncCell _ _) _) = True
-isFuncCell _                       = False
+isFuncCell (Cell (FuncCell _ _ _) _) = True
+isFuncCell _                         = False
 
+-- funkcje pomocnicze
 _start :: (CellCord -> Int) -> FuncParam -> Int
 _start geter (RangeParam x y) = min (geter x) (geter y)
 _end :: (CellCord -> Int) -> FuncParam -> Int
@@ -80,12 +91,13 @@ _getRange :: (CellCord -> Int) -> FuncParam -> [Int]
 _getRange geter rangeParam@(RangeParam firstCord secondCord) = [(_start geter rangeParam)..(_end geter rangeParam)]
 
 
-
-getParamCells :: FuncParam -> [CellCord]
-getParamCells (OneCell cord)                    = [cord]
-getParamCells rangeParam@(RangeParam firstCord secondCord)
+-- zwraca adresy komórek odpowiadają parametrom funkcji
+getFuncParamCords :: FuncParam -> [CellCord]
+getFuncParamCords (OneCell cord)                    = [cord]
+getFuncParamCords rangeParam@(RangeParam firstCord secondCord)
     = [CellCord col row | col <- _getRange getColumn rangeParam, row <- _getRange getRow rangeParam]
 
+-- sprawdza czy komórka jest pośród parametru funkcji
 doesParamContainsCord :: CellCord -> FuncParam -> Bool
 doesParamContainsCord cord rangeParam@(RangeParam x y)
     = let insideColumn = _in getColumn cord rangeParam
@@ -94,6 +106,43 @@ doesParamContainsCord cord rangeParam@(RangeParam x y)
 doesParamContainsCord cord (OneCell x) = getColumn cord == getColumn x && getRow cord == getRow x
 
 
+-- jak wyżej tylko dla wszystkich parametrów
 containsCord :: CellCord -> FuncParams -> Bool
 containsCord x [] = False
 containsCord x params = foldl (||) False (map (doesParamContainsCord x) params )
+
+--
+class NumericValue a where
+    getNumValue :: a -> Maybe NumberType
+
+instance NumericValue CellContent where
+    getNumValue (FuncCell _ _ maybeValue) = maybeValue
+    getNumValue (NumberCell val)          = Just val
+    getNumValue (StringCell _)            = Just $ (IntVal 0)
+    getNumValue (ErrorCell _ _)           = Just $ (IntVal 0)
+
+instance NumericValue Cell where
+    getNumValue (Cell cellContent _) = getNumValue cellContent
+
+
+sumNT :: NumberType -> NumberType -> NumberType
+sumNT (IntVal x) (IntVal y) = IntVal $ x + y
+sumNT (IntVal x) (DecimalVal y) = DecimalVal $ (x * denominator y + numerator y) % denominator y
+sumNT x@(DecimalVal _) y@(IntVal _)  = sumNT x y
+sumNT (DecimalVal x) (DecimalVal y) = DecimalVal $ (numerator x * denominator y + numerator y * denominator x)
+                                    % (denominator x * denominator y)
+
+mulNT :: NumberType -> NumberType -> NumberType
+mulNT (IntVal x) (IntVal y) = IntVal $ x * y
+mulNT (IntVal x) (DecimalVal y) = DecimalVal $ (x * numerator y) % denominator y
+mulNT x@(DecimalVal _) y@(IntVal _)  = mulNT x y
+mulNT (DecimalVal x) (DecimalVal y) = DecimalVal $ (numerator x * numerator y) % (denominator x * denominator y)
+
+divNT :: NumberType -> Int -> NumberType
+divNT (IntVal x) y = let y = toInteger y
+                     in if x `mod` y == (0 :: Integer) then
+                          IntVal $ x `div` y
+                        else
+                          DecimalVal $ x % y
+divNT (DecimalVal x) y = DecimalVal $ numerator x % (denominator x * toInteger y)
+

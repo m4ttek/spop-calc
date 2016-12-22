@@ -20,3 +20,4 @@ sheetTests = TestList [TestLabel "cyclicDepenDetectTest" (cyclicDepenDetectTest 
                      , TestLabel "cyclicDepenDetectTest" (cyclicDepenDetectTest (CellCord 2 1))]
 
 
+--[["=SUM(A2:B3)","=AVG(A2:B3)"],["2", "2"], ["2", "2"]]

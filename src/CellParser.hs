@@ -51,6 +51,9 @@ columnToNumber = foldl (\x y -> x * alphSize + numOfChar y) 0
 digitsToNumber :: String -> Int
 digitsToNumber = foldl (\x y -> x * 10 + digitValue y) 0
 
+digitsToInteger :: String -> Integer
+digitsToInteger = foldl (\x y -> x * toInteger 10 + toInteger (digitValue y)) (0 ::Integer)
+
 -- parser współrzędnych komórki
 parseCellCord :: GenParser Char st CellCord
 parseCellCord = do
@@ -85,21 +88,22 @@ parseFuncArgs = do char '('
 parseFunc :: GenParser Char st CellContent
 parseFunc = do funcName <- parseFuncName
                funcParams <- parseFuncArgs
-               return (FuncCell funcName funcParams)
+               return (FuncCell funcName funcParams Nothing)
 
 -- parsuje liczbę całkowitą
 parseInt :: GenParser Char st NumberType
 parseInt = do a <- many1 digit
-              return (IntVal $ digitsToNumber a)
+              return (IntVal $ digitsToInteger a)
 
 -- parsuje liczbę zmienno przecinkową
 parseDecimal :: GenParser Char st NumberType
 parseDecimal = do afterDot <- many1 digit
                   char '.'
                   beforeDot <- many1 digit
-                  let afterVal = digitsToNumber afterDot
-                  let beforeVal = fromIntegral (digitsToNumber beforeDot) / 10 ^ length beforeDot
-                  return (DecimalVal (fromIntegral afterVal + beforeVal))
+                  let afterVal = digitsToInteger afterDot
+                  let beforeVal = digitsToInteger beforeDot
+                  let prec = 10 ^ length beforeDot
+                  return (DecimalVal $ (afterVal * prec + beforeVal) % prec)
 
 -- parsuje liczbe
 parseNumber :: GenParser Char st CellContent

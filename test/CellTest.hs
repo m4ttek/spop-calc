@@ -15,7 +15,7 @@ yesRangeCellTest = TestCase (assertBool "contains" (containsCord (CellCord 2 2) 
 noRangeCellTest = TestCase (assertBool "doesntContain" (not (containsCord (CellCord 3 4) [RangeParam (CellCord 1 1) (CellCord 3 3)])))
 
 
-generateParamsTest = getParamCells (RangeParam (CellCord 1 1) (CellCord 2 2)) ~?= [CellCord 1 1, CellCord 1 2, CellCord 2 1, CellCord 2 2]
+generateParamsTest = getFuncParamCords (RangeParam (CellCord 1 1) (CellCord 2 2)) ~?= [CellCord 1 1, CellCord 1 2, CellCord 2 1, CellCord 2 2]
 
 
 cellTests = TestList [TestLabel "oneCellYes" yesOneCellTest

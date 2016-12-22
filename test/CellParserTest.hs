@@ -46,7 +46,8 @@ parseTests = TestList [TestLabel "sumFunc" (testFuncParsed parseFuncName "sum" S
                                                                         (CellCord 1 2)
                                                             ,OneCell (CellCord 1 3)
                                                             ,RangeParam (CellCord 2 4)
-                                                            (CellCord 2 5)]))
+                                                            (CellCord 2 5)]
+                                                            Nothing))
                  ,TestLabel "parseAvgFunc" (testFuncParsed parseFunc
                                                             "avg(a1:a2;a3;b4:b5)"
                                                             (FuncCell AVGFunc
@@ -54,13 +55,13 @@ parseTests = TestList [TestLabel "sumFunc" (testFuncParsed parseFuncName "sum" S
                                                                         (CellCord 1 2)
                                                             ,OneCell (CellCord 1 3)
                                                             ,RangeParam (CellCord 2 4)
-                                                            (CellCord 2 5)]))
+                                                            (CellCord 2 5)]
+                                                            Nothing))
                  ,TestLabel "parseInt" (testFuncParsed parseInt
                                                       "3123"
                                                       (IntVal 3123))
                  ,TestLabel "parseDecimal" (testFuncParsed parseDecimal
                                                       "3123.323"
-                                                      (DecimalVal $ approxRational (read "3123.323" :: Double) 0.0000001)) --kijowe rozwiaznie
-                                                       ]
+                                                      (DecimalVal $ 3123323 % 1000))]
 
 
