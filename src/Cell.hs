@@ -74,8 +74,8 @@ getCellOrigin (Cell _ origin) = origin
 
 -- sprawdza czy komórka zawiera funkcję
 isFuncCell :: Cell -> Bool
-isFuncCell (Cell (FuncCell _ _ _) _) = True
-isFuncCell _                         = False
+isFuncCell (Cell FuncCell{} _) = True
+isFuncCell _                   = False
 
 -- funkcje pomocnicze
 _start :: (CellCord -> Int) -> FuncParam -> Int
@@ -108,8 +108,8 @@ doesParamContainsCord cord (OneCell x) = getColumn cord == getColumn x && getRow
 
 -- jak wyżej tylko dla wszystkich parametrów
 containsCord :: CellCord -> FuncParams -> Bool
-containsCord x [] = False
-containsCord x params = foldl (||) False (map (doesParamContainsCord x) params )
+containsCord x []     = False
+containsCord x params = any (doesParamContainsCord x) params
 
 --
 class NumericValue a where
@@ -118,8 +118,8 @@ class NumericValue a where
 instance NumericValue CellContent where
     getNumValue (FuncCell _ _ maybeValue) = maybeValue
     getNumValue (NumberCell val)          = Just val
-    getNumValue (StringCell _)            = Just $ (IntVal 0)
-    getNumValue (ErrorCell _ _)           = Just $ (IntVal 0)
+    getNumValue (StringCell _)            = Just $ IntVal 0
+    getNumValue (ErrorCell _ _)           = Just $ IntVal 0
 
 instance NumericValue Cell where
     getNumValue (Cell cellContent _) = getNumValue cellContent
@@ -139,10 +139,10 @@ mulNT x@(DecimalVal _) y@(IntVal _)  = mulNT x y
 mulNT (DecimalVal x) (DecimalVal y) = DecimalVal $ (numerator x * numerator y) % (denominator x * denominator y)
 
 divNT :: NumberType -> Int -> NumberType
-divNT (IntVal x) y = let y = toInteger y
-                     in if x `mod` y == (0 :: Integer) then
-                          IntVal $ x `div` y
+divNT (IntVal x) y = let yy = toInteger y
+                     in if x `mod` yy == (0 :: Integer) then
+                          IntVal $ x `div` yy
                         else
-                          DecimalVal $ x % y
+                          DecimalVal $ x % yy
 divNT (DecimalVal x) y = DecimalVal $ numerator x % (denominator x * toInteger y)
 

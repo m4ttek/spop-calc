@@ -10,11 +10,17 @@ module Sheet (
     funcCyclicCheck,
     hasCellCyclicDep,
     sheetContentWithCords,
-    fixCyclicDeps
+    fixCyclicDeps,
+    findFuncValues,
+    findValuesWherePossible,
+    JSONCellData (JSONCellData),
+    JSONSheet,
+    toJSONData
 ) where
 
 import           Cell
 import           CellParser
+import           ShowRational
 
 import           Data.Maybe
 import           Debug.Trace
@@ -115,18 +121,18 @@ fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsInRow x = if hasCellC
 
 
 
+-- znajduje wartość dla danej funkcji i parametrów
 countValue :: FuncName -> [NumberType] -> NumberType
 countValue SUMFunc numbers = foldl sumNT (IntVal 0) numbers
 countValue MULFunc numbers = foldl mulNT (IntVal 1) numbers
 countValue AVGFunc numbers = divNT (countValue SUMFunc numbers) (length numbers)
-
 
 -- znajduje wartość dla funkcji
 findValuesForCell :: Cell -> Sheet -> Cell
 findValuesForCell cell@(Cell (FuncCell _ _ (Just numValue)) _) sheet = cell
 findValuesForCell cell@(Cell (FuncCell funcName params Nothing) origin) sheet
   = let funcParamsCells = getFuncParamsCells sheet params
-        maybeCellValues = (map getNumValue funcParamsCells)
+        maybeCellValues = map getNumValue funcParamsCells
         allJust = all isJust maybeCellValues
     in if allJust then
          Cell (FuncCell funcName params (Just (countValue funcName (catMaybes maybeCellValues)))) origin
@@ -136,7 +142,8 @@ findValuesForCell cell@(Cell (FuncCell funcName params Nothing) origin) sheet
 findValuesForCell cell _ = cell
 
 -- wylicza wartości funkcji wszędzie tam, gdzie można je obliczyć
-findValuesWherePossible sheet@(Sheet dim content) = let findValuesInRow row = map (\cell -> findValuesForCell cell sheet) row
+findValuesWherePossible sheet@(Sheet dim content) = let --findValuesInRow [Cell] -> [Cell]
+                                                        findValuesInRow = map (\cell -> findValuesForCell cell sheet)
                                                     in Sheet dim (map findValuesInRow content)
 
 -- wylicza wartości komórek funkcyjnych
@@ -158,3 +165,23 @@ readSheet cells = let height = length cells
                       width | height == 0 = 0
                             | otherwise = length $ head cells
                   in findFuncValues $ fixCyclicDeps $ Sheet (createDim width height) (parseSheet cells)
+
+
+--typ reprezentujacy formę komórki przesyłaną JSONem
+data JSONCellData = JSONCellData String String deriving (Show, Eq)
+--typ rezprezentujący formę arkusza przesyłaną JSONem
+type JSONSheet = [[JSONCellData]]
+
+
+
+-- transformuje komórke do znośnej formy
+toJSONData :: Sheet -> JSONSheet
+toJSONData (Sheet dim content) = let transformContent (StringCell value) = value
+                                     transformContent (NumberCell (IntVal val)) = show val
+                                     transformContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
+                                     transformContent (FuncCell _ _ (Just (IntVal val))) = show val
+                                     transformContent (FuncCell _ _ (Just (DecimalVal val))) = showRational (Just 8) val
+                                     transformContent (ErrorCell errorType _) = "ERR: " ++ show errorType
+                                     transformCell (Cell content origin) = JSONCellData (transformContent content) origin
+                                     transformRow = map transformCell
+                                 in map transformRow content
