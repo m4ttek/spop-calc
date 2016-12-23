@@ -151,10 +151,12 @@ findFuncValues :: Sheet -> Sheet
 findFuncValues sheet@(Sheet dim content) = let allCells = concat content -- złącz wszystkie komórki w liste
                                                funcCells = filter isFuncCell allCells
                                                allJust = all isJust (map getNumValue funcCells)
+                                              -- jak wszystkie są osiągalne do zwróc arkusz bez zmian
                                            in if allJust then
                                                  sheet
+                                              -- jak nie to napraw i spróbuj dalej wyliczać (funkcje od funkcji)
                                               else
-                                                 findValuesWherePossible sheet
+                                                 findFuncValues $ findValuesWherePossible sheet
 
 
 -- wczytuje arkusz z tablicy stringów
@@ -174,11 +176,12 @@ type JSONSheet = [[JSONCellData]]
 
 
 
--- transformuje komórke do znośnej formy
+-- transformuje komórke do znośnej formy, zakłada się, że wszystkie komórki mają wyliczone wartości
 toJSONData :: Sheet -> JSONSheet
 toJSONData (Sheet dim content) = let transformContent (StringCell value) = value
                                      transformContent (NumberCell (IntVal val)) = show val
                                      transformContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
+                                     transformContent (FuncCell _ _ Nothing) = error "invalid cell"
                                      transformContent (FuncCell _ _ (Just (IntVal val))) = show val
                                      transformContent (FuncCell _ _ (Just (DecimalVal val))) = showRational (Just 8) val
                                      transformContent (ErrorCell errorType _) = "ERR: " ++ show errorType

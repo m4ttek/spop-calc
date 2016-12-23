@@ -26,14 +26,26 @@ cyclicTest = TestList [TestLabel "selfCyclicTest" (cyclicDepenDetectTest (CellCo
 json :: String -> String -> JSONCellData
 json = JSONCellData
 
+-- proste 2 funkcjie
 funcValuesSheet = [["=SUM(A2:B3)","=AVG(A2:B3)"],["2", "2"], ["2", "2"]]
+-- funkcje używaja funkcji
+funcValuesDeepSheet = [["=SUM(A2:B3)","=AVG(A2:B3)"],["=SUM(A3:B3)", "=MUL(A3:B3)"], ["2", "2"]]
+
 funcValuesTest = TestList [TestLabel
                                 "funcValuesTest"
                                 ((toJSONData . readSheet) funcValuesSheet
                                  ~?=
                                  [[json "8" "=SUM(A2:B3)", json "2" "=AVG(A2:B3)"],
                                   [json "2" "2", json "2" "2"],
+                                  [json "2" "2", json "2" "2"]])
+                         , TestLabel
+                                "funcValuesDeepSheet"
+                                ((toJSONData . readSheet) funcValuesDeepSheet
+                                 ~?=
+                                 [[json "12" "=SUM(A2:B3)", json "3" "=AVG(A2:B3)"],
+                                  [json "4" "=SUM(A3:B3)", json "4" "=MUL(A3:B3)"],
                                   [json "2" "2", json "2" "2"]])]
+
 
 
 
