@@ -46,9 +46,16 @@ funcValuesTest = TestList [TestLabel
                                   [json "4" "=SUM(A3:B3)", json "4" "=MUL(A3:B3)"],
                                   [json "2" "2", json "2" "2"]])]
 
+funcSwapTest = TestList [TestLabel
+                                "funcValuesTest"
+                                (toJSONData (alterCell (readSheet funcValuesDeepSheet) (CellCord 2 2) "8")
+                                 ~?=
+                                 [[json "16" "=SUM(A2:B3)", json "4" "=AVG(A2:B3)"],
+                                  [json "4" "=SUM(A3:B3)", json "8" "8"],
+                                  [json "2" "2", json "2" "2"]])]
 
 
 
 sheetTests = TestList [cyclicTest
-                      ,funcValuesTest]
---[["=SUM(A2:B3)","=AVG(A2:B3)"],["2", "2"], ["2", "2"]]
+                      ,funcValuesTest
+                      ,funcSwapTest]

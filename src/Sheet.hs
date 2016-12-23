@@ -15,7 +15,8 @@ module Sheet (
     findValuesWherePossible,
     JSONCellData (JSONCellData),
     JSONSheet,
-    toJSONData
+    toJSONData,
+    alterCell
 ) where
 
 import           Cell
@@ -64,6 +65,17 @@ createEmptySheet :: Int -> Int -> Sheet
 createEmptySheet width height = let createRow rowNum = [Cell (StringCell "") "" | columnNum <- [1..height]]
                                     array = [createRow rowNum | rowNum <- [1..width]]
                                 in Sheet (createDim width height) array
+
+
+-- funkcja generyczna aplikujaca mapowanie na liste list
+mapTwoDim ::  (a -> a) -> [[a]] -> [[a]]
+mapTwoDim mappingFunc content = let mapRow = map mappingFunc
+                                in map mapRow content
+
+-- mapuje komórki arkusza przy pomocy funkcji
+mapCells :: (Cell -> Cell) -> Sheet -> Sheet
+mapCells mappingFunc sheet@(Sheet dim content) = let mappedContent = mapTwoDim mappingFunc content
+                                                 in Sheet dim mappedContent
 
 -- pobiera:
 -- sparsowane komórki
@@ -142,9 +154,7 @@ findValuesForCell cell@(Cell (FuncCell funcName params Nothing) origin) sheet
 findValuesForCell cell _ = cell
 
 -- wylicza wartości funkcji wszędzie tam, gdzie można je obliczyć
-findValuesWherePossible sheet@(Sheet dim content) = let --findValuesInRow [Cell] -> [Cell]
-                                                        findValuesInRow = map (\cell -> findValuesForCell cell sheet)
-                                                    in Sheet dim (map findValuesInRow content)
+findValuesWherePossible sheet@(Sheet dim content) = mapCells (\cell -> findValuesForCell cell sheet) sheet
 
 -- wylicza wartości komórek funkcyjnych
 findFuncValues :: Sheet -> Sheet
@@ -188,3 +198,40 @@ toJSONData (Sheet dim content) = let transformContent (StringCell value) = value
                                      transformCell (Cell content origin) = JSONCellData (transformContent content) origin
                                      transformRow = map transformCell
                                  in map transformRow content
+
+
+
+
+
+_clearFuncValue (FuncCell funcName params val) = FuncCell funcName params Nothing
+_clearFuncValue _ = error "not function cell"
+
+-- czysci obliczone wartości arkusza
+clearFuncValues sheet@(Sheet dim content) = let clearFuncCell (Cell funCell@FuncCell{} originValue) = Cell (_clearFuncValue funCell) originValue
+                                                clearFuncCell cell = cell
+                                            in mapCells clearFuncCell sheet
+
+
+-- czysci komórki które mogłby się odcyklicznić
+clearCyclicErrors sheet@(Sheet dim content) = let clearCycErrorCell (Cell (ErrorCell CyclicDependency _) originValue) = parseCell originValue
+                                                  clearCycErrorCell cell = cell
+                                             in mapCells clearCycErrorCell sheet
+
+
+-- zamiana komórki arkusza
+alterCell :: Sheet -> CellCord -> String -> Sheet
+alterCell sheet@(Sheet dim content) newCord newValue =
+    let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
+        inSheet =  (clearCyclicErrors . clearFuncValues) sheet
+        -- dopisuje koordynaty
+        inSheetWithCord = sheetContentWithCords inSheet
+        -- (CellCord, Cell) -> (CellCord, Cell)
+        trySwapCell (cord, cell) = if cord == newCord then
+                                     (cord, parseCell newValue)
+                                   else
+                                     (cord, cell)
+        -- podmina w tablicy z koordynatami
+        swappedContent = mapTwoDim trySwapCell inSheetWithCord
+        -- ekstrat wartości
+        newContent = map (map snd) swappedContent
+    in findFuncValues $ fixCyclicDeps $ Sheet dim newContent
