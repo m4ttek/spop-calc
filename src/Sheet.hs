@@ -10,15 +10,17 @@ module Sheet (
     JSONCellData (JSONCellData),
     JSONSheet,
     toJSONData,
-    alterCell
+    alterCell,
+    fixCyclicDeps,
+    findFuncValues
 ) where
 
 import           Cell
 import           CellParser
 import           ShowRational
 
+import           Data.Array
 import           Data.Maybe
-import           Debug.Trace
 
 
 -- width height
@@ -34,8 +36,7 @@ instance Measurable Dim where
     getWidth (Dim width _) = width
     getHeight (Dim _ height) = height
 
-
-type SheetContent = [[Cell]]
+type SheetContent = Array CellCord Cell
 
 -- arkuszt składa się z
 data Sheet = Sheet Dim SheetContent deriving (Show, Eq)
@@ -44,11 +45,11 @@ getCells :: Sheet -> SheetContent
 getCells (Sheet _ cells) = cells
 
 getCell :: Sheet -> CellCord -> Cell
-getCell sheet (CellCord col row) = if col > getWidth sheet || col < 1 || row > getHeight sheet || row < 1
+getCell sheet cord@(CellCord col row) = if col > getWidth sheet || col < 1 || row > getHeight sheet || row < 1
                                    then
                                      Cell (StringCell "") ""
                                    else
-                                     getCells sheet !! (row - 1) !! (col - 1)
+                                     getCells sheet ! cord
 
 instance Measurable Sheet where
     getWidth (Sheet x _) = getWidth x
@@ -56,38 +57,35 @@ instance Measurable Sheet where
 
 -- tworzy pusty arkusz
 createEmptySheet :: Int -> Int -> Sheet
-createEmptySheet width height = let createRow rowNum = [Cell (StringCell "") "" | columnNum <- [1..height]]
-                                    array = [createRow rowNum | rowNum <- [1..width]]
-                                in Sheet (createDim width height) array
+createEmptySheet width height = let bounds = (CellCord 1 1, CellCord width height)
+                                    content = array bounds [(CellCord columnNum rowNum, Cell (StringCell "") "")
+                                                            | rowNum <- [1..width], columnNum <- [1..height]]
+                                in Sheet (createDim width height) content
 
 
--- funkcja generyczna aplikujaca mapowanie na liste list
-mapTwoDim ::  (a -> a) -> [[a]] -> [[a]]
-mapTwoDim mappingFunc content = let mapRow = map mappingFunc
-                                in map mapRow content
+_mapArray :: (Ix ix) => (a -> a) -> Array ix a -> Array ix a
+_mapArray f arr = array (bounds arr) [(fst indWithElem, f $ snd indWithElem)| indWithElem <- assocs arr]
+_mapArrayWithIdx :: (Ix ix) => (ix -> a -> a) -> Array ix a -> Array ix a
+_mapArrayWithIdx f arr =  array (bounds arr) [(fst indWithElem, f (fst indWithElem) (snd indWithElem)) | indWithElem <- assocs arr]
 
 -- mapuje komórki arkusza przy pomocy funkcji
 mapCells :: (Cell -> Cell) -> Sheet -> Sheet
-mapCells mappingFunc sheet@(Sheet dim content) = let mappedContent = mapTwoDim mappingFunc content
+mapCells mappingFunc sheet@(Sheet dim content) = let mappedContent = _mapArray mappingFunc content
                                                  in Sheet dim mappedContent
 
--- pobiera:
--- sparsowane komórki
--- oryginalną listę
--- rozmiar arkusza
--- zwraca:
--- arkusz
-sheetListToContent :: [[CellContent]] -> [[String]] -> Int -> Int -> Sheet
-sheetListToContent parsedCells originCells width height
-                  = let getCell tab x y = (tab !! (y - 1) !! (x - 1))
-                        createRow rowNum = [Cell (getCell parsedCells columnNum rowNum)
-                                                 (getCell originCells columnNum rowNum) | columnNum <- [1..height]]
-                        array = [createRow rowNum | rowNum <- [1..width]]
-                    in Sheet (createDim width height) array
+-- mapuje komórki arkusza przy pomocy funkcji funkcja poza komorką przyjmuje koordynant tej komórki
+mapCellWithCord :: (CellCord -> Cell -> Cell) -> Sheet -> Sheet
+mapCellWithCord mappingFunc sheet@(Sheet dim content) = let mappedContent = _mapArrayWithIdx mappingFunc content
+                                                        in Sheet dim mappedContent
 
 -- zamienia [[]] na listę [[CellContent]]
-parseSheet :: [[String]] -> [[Cell]]
-parseSheet = map (map parseCell)
+parseSheet :: Dim -> [[String]] -> SheetContent
+parseSheet dim@(Dim width height) rawCont
+    = let bounds = (CellCord 1 1, CellCord width height)
+          rowsWithNum = zip [1..height] rawCont -- [(rowNum, [rowConent])]
+          cellWithCord rowWithNum = zipWith (\rawCell col-> (CellCord col (fst rowWithNum), parseCell rawCell)) (snd rowWithNum) [1..width]
+          content = concat $ map cellWithCord rowsWithNum
+      in array bounds content
 
 
 -- pobiera komórki składające się na argumenty funkcji
@@ -111,19 +109,13 @@ hasCellCyclicDep :: CellCord -> Sheet -> Bool
 hasCellCyclicDep cord sheet = let cell = getCell sheet cord
                               in isFuncCell cell && funcCyclicCheck cord (getCellContent cell) sheet
 
--- zwraca treść arkusza wraz z odpowiadającymi pozycjami
-sheetContentWithCords :: Sheet -> [[(CellCord, Cell)]]
-sheetContentWithCords sheet = let cells = getCells sheet
-                                  rowsWithNum = zip [1..(getHeight sheet)] cells -- [(rowNum, [rowConent])]
-                                  cellWithCord rowWithNum = zipWith (\cell col-> (CellCord col (fst rowWithNum), cell)) (snd rowWithNum) [1..(getWidth sheet)]
-                              in map cellWithCord rowsWithNum
 
 -- zamienia komórki o cyklicznych zależnościach na błędne
 fixCyclicDeps :: Sheet -> Sheet
-fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsInRow x = if hasCellCyclicDep (fst x) sheet then
-                                                                       Cell (ErrorCell CyclicDependency "cyclic dependency") (getCellOrigin (snd x))
-                                                                     else snd x
-                                          in Sheet dim [map fixCyclicDepsInRow row | row <- sheetContentWithCords sheet]
+fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsCell cord cell = if hasCellCyclicDep cord sheet then
+                                                                           Cell (ErrorCell CyclicDependency "cyclic dependency") (getCellOrigin cell)
+                                                                        else cell
+                                          in mapCellWithCord fixCyclicDepsCell sheet
 
 
 
@@ -148,11 +140,11 @@ findValuesForCell cell@(Cell (FuncCell funcName params Nothing) origin) sheet
 findValuesForCell cell _ = cell
 
 -- wylicza wartości funkcji wszędzie tam, gdzie można je obliczyć
-findValuesWherePossible sheet@(Sheet dim content) = mapCells (\cell -> findValuesForCell cell sheet) sheet
+findValuesWherePossible sheet@(Sheet dim content) = Sheet dim (_mapArray (\cell -> findValuesForCell cell sheet) content)
 
 -- wylicza wartości komórek funkcyjnych
 findFuncValues :: Sheet -> Sheet
-findFuncValues sheet@(Sheet dim content) = let allCells = concat content -- złącz wszystkie komórki w liste
+findFuncValues sheet@(Sheet dim content) = let allCells = elems content -- złącz wszystkie komórki w liste
                                                funcCells = filter isFuncCell allCells
                                                allJust = all isJust (map getNumValue funcCells)
                                               -- jak wszystkie są osiągalne do zwróc arkusz bez zmian
@@ -170,7 +162,8 @@ readSheet :: [[String]] -> Sheet
 readSheet cells = let height = length cells
                       width | height == 0 = 0
                             | otherwise = length $ head cells
-                  in findFuncValues $ fixCyclicDeps $ Sheet (createDim width height) (parseSheet cells)
+                      dim = createDim width height
+                  in findFuncValues $ fixCyclicDeps $ Sheet dim (parseSheet dim cells)
 
 
 --typ reprezentujacy formę komórki przesyłaną JSONem
@@ -182,19 +175,18 @@ type JSONSheet = [[JSONCellData]]
 
 -- transformuje komórke do znośnej formy, zakłada się, że wszystkie komórki mają wyliczone wartości
 toJSONData :: Sheet -> JSONSheet
-toJSONData (Sheet dim content) = let transformContent (StringCell value) = value
-                                     transformContent (NumberCell (IntVal val)) = show val
-                                     transformContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
-                                     transformContent (FuncCell _ _ Nothing) = error "invalid cell"
-                                     transformContent (FuncCell _ _ (Just (IntVal val))) = show val
-                                     transformContent (FuncCell _ _ (Just (DecimalVal val))) = showRational (Just 8) val
-                                     transformContent (ErrorCell errorType _) = "ERR: " ++ show errorType
-                                     transformCell (Cell content origin) = JSONCellData (transformContent content) origin
-                                     transformRow = map transformCell
-                                 in map transformRow content
-
-
-
+toJSONData sheet@(Sheet dim content) = let transformContent (StringCell value) = value
+                                           transformContent (NumberCell (IntVal val)) = show val
+                                           transformContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
+                                           transformContent (FuncCell _ _ Nothing) = error "invalid cell"
+                                           transformContent (FuncCell _ _ (Just (IntVal val))) = show val
+                                           transformContent (FuncCell _ _ (Just (DecimalVal val))) = showRational (Just 8) val
+                                           transformContent (ErrorCell errorType _) = "ERR: " ++ show errorType
+                                           transformCell (Cell content origin) = JSONCellData (transformContent content) origin
+                                           cellsCords = [[CellCord col row | col <- [1..(getWidth dim)]] | row <- [1..(getHeight dim)]]
+                                           getCellAndTransform cord = transformCell (getCell sheet cord)
+                                           mapCordToCont = map (map getCellAndTransform) cellsCords
+                                        in mapCordToCont
 
 
 _clearFuncValue (FuncCell funcName params val) = FuncCell funcName params Nothing
@@ -217,15 +209,11 @@ alterCell :: Sheet -> CellCord -> String -> Sheet
 alterCell sheet@(Sheet dim content) newCord newValue =
     let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
         inSheet =  (clearCyclicErrors . clearFuncValues) sheet
-        -- dopisuje koordynaty
-        inSheetWithCord = sheetContentWithCords inSheet
         -- (CellCord, Cell) -> (CellCord, Cell)
-        trySwapCell (cord, cell) = if cord == newCord then
-                                     (cord, parseCell newValue)
-                                   else
-                                     (cord, cell)
+        trySwapCell cord cell = if cord == newCord then
+                                   parseCell newValue
+                                else
+                                   cell
         -- podmina w tablicy z koordynatami
-        swappedContent = mapTwoDim trySwapCell inSheetWithCord
-        -- ekstrat wartości
-        newContent = map (map snd) swappedContent
-    in findFuncValues $ fixCyclicDeps $ Sheet dim newContent
+        swappedContent = mapCellWithCord trySwapCell inSheet
+    in findFuncValues $ fixCyclicDeps swappedContent
