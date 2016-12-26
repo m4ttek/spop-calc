@@ -124,11 +124,8 @@ instance Ix CellCord where
                                      startCol = _start getColumn rangeParam
                                      endCol = _end getColumn rangeParam
                                      startRow = _start getRow rangeParam
-                                     endRow = _end getRow rangeParam
                                      columns = endCol - startCol + 1
-                                     rows = endRow - startRow + 1
-                                 in ((getRow toFind) - startRow) * columns + getColumn toFind -- FIXME część jest zbędna
-
+                                 in ((getRow toFind) - startRow) * columns + getColumn toFind - 1 -- [0, n-1]
 
 
 -- typ do operacji numeryczny - prezentowanie wartości, wyliczanie wartości funkcji

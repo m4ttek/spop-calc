@@ -10,7 +10,9 @@ module Sheet (
     JSONCellData (JSONCellData),
     JSONSheet,
     toJSONData,
-    alterCell
+    alterCell,
+    fixCyclicDeps,
+    findFuncValues
 ) where
 
 import           Cell
@@ -66,9 +68,9 @@ mapTwoDim ::  (a -> a) -> [[a]] -> [[a]]
 mapTwoDim mappingFunc content = let mapRow = map mappingFunc
                                 in map mapRow content
 
-_mapArray :: (a -> a) -> Array ix a -> Array ix a
+_mapArray :: (Ix ix) => (a -> a) -> Array ix a -> Array ix a
 _mapArray f arr = array (bounds arr) [(fst indWithElem, f $ snd indWithElem)| indWithElem <- assocs arr]
-_mapArrayWithIdx :: (ix -> a -> a) -> Array ix a -> Array ix a
+_mapArrayWithIdx :: (Ix ix) => (ix -> a -> a) -> Array ix a -> Array ix a
 _mapArrayWithIdx f arr =  array (bounds arr) [(fst indWithElem, f (fst indWithElem) (snd indWithElem)) | indWithElem <- assocs arr]
 
 -- mapuje komórki arkusza przy pomocy funkcji
@@ -124,10 +126,10 @@ hasCellCyclicDep cord sheet = let cell = getCell sheet cord
 
 -- zamienia komórki o cyklicznych zależnościach na błędne
 fixCyclicDeps :: Sheet -> Sheet
-fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsInRow cord cell = if hasCellCyclicDep cord sheet then
-                                                                       Cell (ErrorCell CyclicDependency "cyclic dependency") (getCellOrigin cell)
-                                                                     else cell
-                                          in Sheet dim (_mapArrayWithIdx fixCyclicDepsInRow content)
+fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsCell cord cell = if hasCellCyclicDep cord sheet then
+                                                                           Cell (ErrorCell CyclicDependency "cyclic dependency") (getCellOrigin cell)
+                                                                        else cell
+                                          in Sheet dim (_mapArrayWithIdx fixCyclicDepsCell content)
 
 
 
@@ -152,7 +154,7 @@ findValuesForCell cell@(Cell (FuncCell funcName params Nothing) origin) sheet
 findValuesForCell cell _ = cell
 
 -- wylicza wartości funkcji wszędzie tam, gdzie można je obliczyć
-findValuesWherePossible sheet@(Sheet dim content) = mapCells (\cell -> findValuesForCell cell sheet) sheet
+findValuesWherePossible sheet@(Sheet dim content) = Sheet dim (_mapArray (\cell -> findValuesForCell cell sheet) content)
 
 -- wylicza wartości komórek funkcyjnych
 findFuncValues :: Sheet -> Sheet
@@ -175,7 +177,7 @@ readSheet cells = let height = length cells
                       width | height == 0 = 0
                             | otherwise = length $ head cells
                       dim = createDim width height
-                  in findFuncValues $ fixCyclicDeps $ Sheet dim  (parseSheet dim cells)
+                  in findFuncValues $ fixCyclicDeps $ Sheet dim (parseSheet dim cells)
 
 
 --typ reprezentujacy formę komórki przesyłaną JSONem
@@ -187,20 +189,19 @@ type JSONSheet = [[JSONCellData]]
 
 -- transformuje komórke do znośnej formy, zakłada się, że wszystkie komórki mają wyliczone wartości
 --FIXME
-{-toJSONData :: Sheet -> JSONSheet
-toJSONData (Sheet dim content) = let transformContent (StringCell value) = value
-                                     transformContent (NumberCell (IntVal val)) = show val
-                                     transformContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
-                                     transformContent (FuncCell _ _ Nothing) = error "invalid cell"
-                                     transformContent (FuncCell _ _ (Just (IntVal val))) = show val
-                                     transformContent (FuncCell _ _ (Just (DecimalVal val))) = showRational (Just 8) val
-                                     transformContent (ErrorCell errorType _) = "ERR: " ++ show errorType
-                                     transformCell (Cell content origin) = JSONCellData (transformContent content) origin
-                                     transformRow = map transformCell
-                                 in _mapArrayWithIdx transformRow content -}
-
-
-
+toJSONData :: Sheet -> JSONSheet
+toJSONData sheet@(Sheet dim content) = let transformContent (StringCell value) = value
+                                           transformContent (NumberCell (IntVal val)) = show val
+                                           transformContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
+                                           transformContent (FuncCell _ _ Nothing) = error "invalid cell"
+                                           transformContent (FuncCell _ _ (Just (IntVal val))) = show val
+                                           transformContent (FuncCell _ _ (Just (DecimalVal val))) = showRational (Just 8) val
+                                           transformContent (ErrorCell errorType _) = "ERR: " ++ show errorType
+                                           transformCell (Cell content origin) = JSONCellData (transformContent content) origin
+                                           cellsCords = [[CellCord col row | col <- [1..(getWidth dim)]] | row <- [1..(getHeight dim)]]
+                                           getCellAndTransform cord = transformCell (getCell sheet cord)
+                                           mapCordToCont = map (map getCellAndTransform) cellsCords
+                                        in mapCordToCont
 
 
 _clearFuncValue (FuncCell funcName params val) = FuncCell funcName params Nothing
@@ -222,12 +223,13 @@ clearCyclicErrors sheet@(Sheet dim content) = let clearCycErrorCell (Cell (Error
 alterCell :: Sheet -> CellCord -> String -> Sheet
 alterCell sheet@(Sheet dim content) newCord newValue =
     let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
-        inSheet =  (clearCyclicErrors . clearFuncValues) sheet
+        inSheet@(Sheet _ inContent) =  (clearCyclicErrors . clearFuncValues) sheet
         -- (CellCord, Cell) -> (CellCord, Cell)
         trySwapCell cord cell = if cord == newCord then
                                    parseCell newValue
                                 else
                                    cell
         -- podmina w tablicy z koordynatami
-        swappedContent = _mapArrayWithIdx trySwapCell inSheet
+
+        swappedContent = _mapArrayWithIdx trySwapCell inContent
     in findFuncValues $ fixCyclicDeps $ Sheet dim swappedContent

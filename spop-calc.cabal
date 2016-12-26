@@ -60,6 +60,7 @@ benchmark spop-calc-bench
                   , random
                   , spop-calc
                   , parsec == 3.1.8
+                  , array == 0.5.1.1
   other-modules:    Cell
                   , CellParser
                   , Sheet
