@@ -19,12 +19,13 @@ module Cell (
     divNT
 ) where
 
+import           Data.Array
 import           Data.Ratio
 
 -- położenie (0,0) to lewy górny róg
 -- x - kolumna
 -- y - wiersze
-data CellCord = CellCord Int Int deriving (Eq, Show)
+data CellCord = CellCord Int Int deriving (Ord, Eq, Show)
 
 getColumn :: CellCord -> Int
 getColumn (CellCord col _) = col
@@ -111,7 +112,26 @@ containsCord :: CellCord -> FuncParams -> Bool
 containsCord x []     = False
 containsCord x params = any (doesParamContainsCord x) params
 
---
+
+-- Implementacja indeksowania po CellCordzie przy pomocy powyższych funkcji
+instance Ix CellCord where
+    -- The list of values in the subrange defined by a bounding pair.
+    range (cordA,cordB) = getFuncParamCords (RangeParam cordA cordB)
+    -- Returns True the given subscript lies in the range defined the bounding pair
+    inRange (cordA,cordB) toCheck = doesParamContainsCord toCheck (RangeParam cordA cordB)
+    -- The position of a subscript in the subrange.
+    index (cordA,cordB) toFind = let rangeParam = RangeParam cordA cordB
+                                     startCol = _start getColumn rangeParam
+                                     endCol = _end getColumn rangeParam
+                                     startRow = _start getRow rangeParam
+                                     endRow = _end getRow rangeParam
+                                     columns = endCol - startCol + 1
+                                     rows = endRow - startRow + 1
+                                 in ((getRow toFind) - startRow) * columns + getColumn toFind -- FIXME część jest zbędna
+
+
+
+-- typ do operacji numeryczny - prezentowanie wartości, wyliczanie wartości funkcji
 class NumericValue a where
     getNumValue :: a -> Maybe NumberType
 
