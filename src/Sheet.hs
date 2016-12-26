@@ -63,11 +63,6 @@ createEmptySheet width height = let bounds = (CellCord 1 1, CellCord width heigh
                                 in Sheet (createDim width height) content
 
 
--- funkcja generyczna aplikujaca mapowanie na liste list
-mapTwoDim ::  (a -> a) -> [[a]] -> [[a]]
-mapTwoDim mappingFunc content = let mapRow = map mappingFunc
-                                in map mapRow content
-
 _mapArray :: (Ix ix) => (a -> a) -> Array ix a -> Array ix a
 _mapArray f arr = array (bounds arr) [(fst indWithElem, f $ snd indWithElem)| indWithElem <- assocs arr]
 _mapArrayWithIdx :: (Ix ix) => (ix -> a -> a) -> Array ix a -> Array ix a
@@ -78,19 +73,10 @@ mapCells :: (Cell -> Cell) -> Sheet -> Sheet
 mapCells mappingFunc sheet@(Sheet dim content) = let mappedContent = _mapArray mappingFunc content
                                                  in Sheet dim mappedContent
 
--- pobiera:
--- sparsowane komórki
--- oryginalną listę
--- rozmiar arkusza
--- zwraca:
--- arkusz
-{-sheetListToContent :: [[CellContent]] -> [[String]] -> Int -> Int -> Sheet
-sheetListToContent parsedCells originCells width height
-                  = let getCell tab x y = (tab !! (y - 1) !! (x - 1))
-                        createRow rowNum = [Cell (getCell parsedCells columnNum rowNum)
-                                                 (getCell originCells columnNum rowNum) | columnNum <- [1..height]]
-                        array = [createRow rowNum | rowNum <- [1..width]]
-                    in Sheet (createDim width height) array-}
+-- mapuje komórki arkusza przy pomocy funkcji funkcja poza komorką przyjmuje koordynant tej komórki
+mapCellWithCord :: (CellCord -> Cell -> Cell) -> Sheet -> Sheet
+mapCellWithCord mappingFunc sheet@(Sheet dim content) = let mappedContent = _mapArrayWithIdx mappingFunc content
+                                                        in Sheet dim mappedContent
 
 -- zamienia [[]] na listę [[CellContent]]
 parseSheet :: Dim -> [[String]] -> SheetContent
@@ -129,7 +115,7 @@ fixCyclicDeps :: Sheet -> Sheet
 fixCyclicDeps sheet@(Sheet dim content) = let fixCyclicDepsCell cord cell = if hasCellCyclicDep cord sheet then
                                                                            Cell (ErrorCell CyclicDependency "cyclic dependency") (getCellOrigin cell)
                                                                         else cell
-                                          in Sheet dim (_mapArrayWithIdx fixCyclicDepsCell content)
+                                          in mapCellWithCord fixCyclicDepsCell sheet
 
 
 
@@ -188,7 +174,6 @@ type JSONSheet = [[JSONCellData]]
 
 
 -- transformuje komórke do znośnej formy, zakłada się, że wszystkie komórki mają wyliczone wartości
---FIXME
 toJSONData :: Sheet -> JSONSheet
 toJSONData sheet@(Sheet dim content) = let transformContent (StringCell value) = value
                                            transformContent (NumberCell (IntVal val)) = show val
@@ -223,13 +208,12 @@ clearCyclicErrors sheet@(Sheet dim content) = let clearCycErrorCell (Cell (Error
 alterCell :: Sheet -> CellCord -> String -> Sheet
 alterCell sheet@(Sheet dim content) newCord newValue =
     let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
-        inSheet@(Sheet _ inContent) =  (clearCyclicErrors . clearFuncValues) sheet
+        inSheet =  (clearCyclicErrors . clearFuncValues) sheet
         -- (CellCord, Cell) -> (CellCord, Cell)
         trySwapCell cord cell = if cord == newCord then
                                    parseCell newValue
                                 else
                                    cell
         -- podmina w tablicy z koordynatami
-
-        swappedContent = _mapArrayWithIdx trySwapCell inContent
-    in findFuncValues $ fixCyclicDeps $ Sheet dim swappedContent
+        swappedContent = mapCellWithCord trySwapCell inSheet
+    in findFuncValues $ fixCyclicDeps swappedContent
