@@ -1,34 +1,159 @@
-document.getElementById(#{toJSON aDomId}).innerHTML = "This text was added by the Javascript part of the homepage widget.";
+
 
 $(function() {
-  $("##{rawJS commentFormId}").submit(function(event) {
-    event.preventDefault();
-
-    var message = $("##{rawJS commentTextareaId}").val();
-    // (Browsers that enforce the "required" attribute on the textarea won't see this alert)
-    if (!message) {
-      alert("Please fill out the comment form first.");
-      return;
+  var functionCallback = function(functionTemplate) {
+    return function(key, opt) {
+      opt.$trigger.context.innerText = functionTemplate;
+      opt.$trigger.context.click();
+    };
+  };
+  // budowniczy menu kontekstowego
+  $.contextMenu({
+    selector: 'table td',
+    autoHide: true,
+    items: {
+      add: {
+        name: 'Sum function',
+        callback: functionCallback('=SUM(_:_)')
+      },
+      mul: {
+        name: 'Multiply function',
+        callback: functionCallback('=MUL(_:_)')
+      },
+      avg: {
+        name: 'Average function',
+        callback: functionCallback('=AVG(_:_)')
+      }
     }
-
-    // Make an AJAX request to the server to create a new comment
-    $.ajax({
-      url: '@{CommentR}',
-      type: 'POST',
-      contentType: "application/json",
-      data: JSON.stringify({
-        message: message,
-      }),
-      success: function (data) {
-        var newNode = $("<li></li>");
-        newNode.text(data.message);
-        console.log(data);
-        $("##{rawJS commentListId}").append(newNode);
-      },
-      error: function (data) {
-        console.log("Error creating comment: " + data);
-      },
-    });
-
   });
+
+  var $uploadFile = $("#upload-file"),
+      $uploadFileFormButton = $uploadFile.siblings('#upload-file-button'),
+      $downloadFile = $("#download-file"),
+      $newSheet = $('#new-sheet'),
+      $progressBar = $('.progress'),
+      isProperCSV = #{isProperCSV},
+      $table = $('table'),
+      fillTableWithData = function(data) {
+        $.each(data, function(rowIdx, row) {
+          var $row = $table.find('tr:eq(' + (rowIdx + 1) + ')');
+          if (!$row.length) {
+            $row = $table.find('tr:eq(1)').clone();
+            $row.find('th').text(rowIdx + 1);
+            $table.append($row);
+            $table.editableTableWidget();
+          }
+          $.each(row, function(colIdx, cell) {
+            var $cell = $row.find('td:eq(' + colIdx + ')');
+            if (!$cell.length) {
+              $row = $table.find('tr').first().clone();
+              $table.append($row);
+            }
+            $cell.attr('raw-value', cell[1]);
+            $cell.attr('title', cell[0]);
+            $cell.html(cell[0]);
+            // jeśli mamy do czynienia z funkcją to dodajemy klasę
+            if (cell[0].startsWith('ERR')) {
+              $cell.addClass('error-cell');
+            } else if (cell[1] != cell[0]) {
+              $cell.addClass('function-cell');
+            } else {
+              $cell.removeClass('function-cell').removeClass('error-cell');
+            }
+          });
+        });
+      },
+      tableGetCallback = function(data) {
+          if ($.type(data) == 'array') {
+            fillTableWithData(data);
+          }
+          $progressBar.hide();
+      },
+      tableService = function() {
+        // inicjalizacja tabeli
+        $.getJSON('/sheet', tableGetCallback);
+        // uruchomienie arkusza
+        $('table').editableTableWidget();
+
+        // listener na zmianę w komórce tabeli
+        $('table').on('change', 'td', function(evt, newValue) {
+          $progressBar.show();
+
+          var col = evt.currentTarget.cellIndex,
+              row = $(evt.currentTarget).parent()[0].rowIndex;
+
+          $.ajax({
+            url: '/sheet/' + row + '/' + col + '/' + encodeURIComponent(newValue == '' ? ' ' : newValue),
+            method: "PUT",
+            success: function(data) {
+               tableGetCallback(data);
+               $(this).attr('title', newValue);
+            }
+          });
+          return true;
+        });
+
+        // listener na podwójny klik w header kolumny lub wiersza
+        $('table').on('dblclick', 'th', function(evt) {
+          $progressBar.show();
+
+          var col = evt.currentTarget.cellIndex,
+              row = $(evt.currentTarget).parent()[0].rowIndex;
+
+          $.ajax({
+            url: '/sheet/' + (col == 0 ? ('row/' + row) : ('col/' + col)),
+            method: "PUT",
+            success: tableGetCallback
+          });
+        });
+        $('table').on('click', '.function-cell', function() {
+          var $this = $(this);
+          $this.text($this.attr('raw-value'));
+        });
+
+        $('table').on('focusout', '.function-cell', function() {
+          var $this = $(this);
+          $this.text($this.attr('title'));
+        });
+      };
+
+  // obsługa ukrytego inputa formularza
+  $uploadFile.click(function() {
+    $uploadFileFormButton.click();
+  });
+
+  // automatyczny submit fomularza przy załadowaniu pliku
+  $uploadFileFormButton.change(function() {
+      $(this).parent().submit();
+  });
+
+  $newSheet.on('click', function() {
+    if (isProperCSV) {
+      // ostrzeżenie przy próbie stworzenia nowego arkusza
+      bootbox.confirm('This will create empty sheet overriding the existing one.'
+                       + '<br>Keep in mind to download recent changes.'
+                       + '<br>Are you sure you want to continue?', function(resp) {
+        if (resp) {
+          window.location = '/new';
+        }
+      });
+    } else {
+      window.location = '/new';
+    }
+  });
+
+  // przycisk do pobrania powinien być nieaktywny, jeśli plik nie został poprawnie załadowany na serwer
+  $downloadFile.attr('disabled', !isProperCSV);
+  if (isProperCSV) {
+    // pozytywne wczytanie pliku powinno skutkować ukryciem informacji po pewnym czasie
+    setTimeout(function() {
+      $('#success-well').hide();
+    }, 1400);
+
+    // uruchomienie serwisów związanych z JS-ową obsługą arkusza
+    tableService();
+  } else {
+    $progressBar.hide();
+  }
+
 });

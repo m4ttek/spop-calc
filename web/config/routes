@@ -5,4 +5,13 @@
 
 / HomeR GET POST
 
-/comments CommentR POST
+/new NewR GET
+
+/download DownloadR GET
+
+/sheet SheetjsonR GET
+
+/sheet/#Int/#Int/#String UpdatesheetR PUT
+
+/sheet/row/#Int AddsheetrowR PUT
+/sheet/col/#Int AddsheetcolR PUT

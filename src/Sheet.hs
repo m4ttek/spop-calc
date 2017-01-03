@@ -6,6 +6,7 @@ module Sheet (
     getWidth, getHeight,
     createEmptySheet,
     readSheet,
+    writeSheet,
     parseSheet,
     JSONCellData (JSONCellData),
     JSONSheet,
@@ -165,6 +166,15 @@ readSheet cells = let height = length cells
                       dim = createDim width height
                   in findFuncValues $ fixCyclicDeps $ Sheet dim (parseSheet dim cells)
 
+-- zapisuje arkusz do tablicy stringów
+-- -> wiersz []
+-- -> kolumna [[]]
+writeSheet :: Sheet -> [[String]]
+writeSheet sheet@(Sheet (Dim width height) cells) = (map
+                                                      (\y -> (map
+                                                               (\x -> getCellOrigin $ getCell sheet $ CellCord x y)
+                                                               [1..width]))
+                                                      [1..height])
 
 --typ reprezentujacy formę komórki przesyłaną JSONem
 data JSONCellData = JSONCellData String String deriving (Show, Eq)
@@ -205,8 +215,8 @@ clearCyclicErrors sheet@(Sheet dim content) = let clearCycErrorCell (Cell (Error
 
 
 -- zamiana komórki arkusza
-alterCell :: Sheet -> CellCord -> String -> Sheet
-alterCell sheet@(Sheet dim content) newCord newValue =
+alterCell :: CellCord -> String -> Sheet -> Sheet
+alterCell newCord newValue sheet@(Sheet dim content) =
     let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
         inSheet =  (clearCyclicErrors . clearFuncValues) sheet
         -- (CellCord, Cell) -> (CellCord, Cell)

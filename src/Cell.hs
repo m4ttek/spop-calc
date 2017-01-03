@@ -44,7 +44,7 @@ data FuncParam = RangeParam CellCord CellCord | OneCell CellCord deriving (Eq, S
 data NumberType = IntVal Integer | DecimalVal Rational deriving (Eq, Show)
 
 -- funkcja
-data FuncName = SUMFunc | MULFunc | AVGFunc deriving (Eq, Show)
+data FuncName = SUMFunc | MULFunc | AVGFunc deriving (Eq, Show, Enum)
 
 -- rodzaj błędu
 data ErrorType = ParseFail | CyclicDependency  deriving (Eq, Show)

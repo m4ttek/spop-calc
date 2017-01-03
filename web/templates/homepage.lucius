@@ -1,13 +1,19 @@
-h2##{aDomId} {
-    color: #990
-}
-
 li {
     line-height: 2em;
     font-size: 16px
 }
 
-##{commentTextareaId} {
-    width: 400px;
-    height: 100px;
+td {
+    max-width: 100px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.function-cell {
+    background-color: antiquewhite;
+}
+
+.error-cell {
+    background-color: orangered;
 }

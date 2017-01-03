@@ -1,3 +1,15 @@
+@media (min-width: 1600px) {
+  .container {
+      width: 1570px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .container {
+      width: 1370px;
+  }
+}
+
 .navbar {
     background-color: rgb(27, 28, 29);
     color: white;
@@ -12,6 +24,15 @@
     line-height: 1em;
 }
 
+#upload-file-button {
+  display: none;
+}
+
+#new-sheet {
+  margin: 7.5px 15px;
+  padding: 10px 15px;
+}
+
 /* Common styles for all types */
 .bs-callout {
   padding: 20px;
@@ -19,10 +40,6 @@
   border: 1px solid #eee;
   border-left-width: 5px;
   border-radius: 3px;
-}
-
-.bs-callout p:last-child {
-  margin-bottom: 0;
 }
 
 .bs-callout-info {
@@ -35,8 +52,4 @@
 }
 .bs-docs-section:last-child {
   margin-bottom: 0;
-}
-
-#message {
-    margin-bottom: 40px;
 }

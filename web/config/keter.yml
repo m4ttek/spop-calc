@@ -1,6 +1,6 @@
 # After you've edited this file, remove the following line to allow
 # `yesod keter` to build your bundle.
-user-edited: false
+user-edited: true
 
 # A Keter app is composed of 1 or more stanzas. The main stanza will define our
 # web application. See the Keter documentation for more information on
@@ -16,7 +16,7 @@ stanzas:
     # The path given is for Stack projects. If you're still using cabal, change
     # to
     # exec: ../dist/build/my-project/my-project
-    exec: ../dist/bin/my-project
+    exec: ../dist/bin/spop-calc-web
 
     # Command line options passed to your application.
     args: []
@@ -25,7 +25,8 @@ stanzas:
       # You can specify one or more hostnames for your application to respond
       # to. The primary hostname will be used for generating your application
       # root.
-      - www.my-project.com
+      - www.spop-calc.tk
+      - spopcalc-archiplan.rhcloud.com
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
@@ -34,7 +35,8 @@ stanzas:
   # Static files.
   - type: static-files
     hosts:
-      - static.my-project.com
+      - www.spop-calc.tk
+      - spopcalc-archiplan.rhcloud.com
     root: ../static
 
     # Uncomment to turn on directory listings.
@@ -44,9 +46,9 @@ stanzas:
   - type: redirect
 
     hosts:
-      - my-project.com
+      - spop-calc.tk
     actions:
-      - host: www.my-project.com
+      - host: www.spop-calc.tk
         # secure: false
         # port: 80
 

@@ -5,36 +5,35 @@
         <div .navbar-header>
             <a .navbar-brand href="#">
                 SPOP-calc
-            
+
         <div #navbar>
             <ul .nav.navbar-nav.navbar-right>
                 <li .navbar-label>
                     <p .navbar-text>
-                            Upload File
+                        New sheet
                 <li>
-                    <form .navbar-form>    
-                        <button type="button" .btn.btn-default aria-label="Left Align">
+                    <button #new-sheet type="submit" .btn.btn-default aria-label="Left Align">
+                       <span aria-hidden="true" .glyphicon.glyphicon-file>
+                <li .navbar-label>
+                    <p .navbar-text>
+                        Upload sheet
+                <li>
+                    <form .navbar-form name="upload_file" method="POST" action="/" enctype="multipart/form-data">
+                        <input #upload-file-button type="file" name="csv_file">
+                        <button #upload-file type="button" .btn.btn-default aria-label="Left Align">
                             <span aria-hidden="true" .glyphicon.glyphicon-upload>
                 <li .navbar-label>
                     <p .navbar-text>
-                            Download File
+                        Download sheet
                 <li>
-                    <form .navbar-form>
-                        <button type="button" .btn.btn-default aria-label="Left Align">
+                    <form .navbar-form name="download_file" method="GET" action="/download">
+                        <button #download-file type="submit" .btn.btn-default aria-label="Left Align">
                             <span aria-hidden="true" .glyphicon.glyphicon-download>
 
 
 <!-- Page Contents -->
 
 <div .container>
-    $if not $ Just HomeR == mcurrentRoute
-        <ul .breadcrumb>
-            $forall bc <- parents
-                <li>
-                    <a href="@{fst bc}">#{snd bc}
-
-            <li .active>#{title}
-
     $maybe msg <- mmsg
       <div .alert.alert-info #message>#{msg}
 
