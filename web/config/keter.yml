@@ -15,8 +15,8 @@ stanzas:
     #
     # The path given is for Stack projects. If you're still using cabal, change
     # to
-    # exec: ../dist/build/spop-calc-web/spop-calc-web
-    exec: ../dist/bin/spop-calc-web
+    # exec: ../dist/build/my-project/my-project
+    exec: ../dist/bin/my-project
 
     # Command line options passed to your application.
     args: []
@@ -25,7 +25,7 @@ stanzas:
       # You can specify one or more hostnames for your application to respond
       # to. The primary hostname will be used for generating your application
       # root.
-      - www.spop-calc-web.com
+      - www.my-project.com
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
@@ -34,7 +34,7 @@ stanzas:
   # Static files.
   - type: static-files
     hosts:
-      - static.spop-calc-web.com
+      - static.my-project.com
     root: ../static
 
     # Uncomment to turn on directory listings.
@@ -44,9 +44,9 @@ stanzas:
   - type: redirect
 
     hosts:
-      - spop-calc-web.com
+      - my-project.com
     actions:
-      - host: www.spop-calc-web.com
+      - host: www.my-project.com
         # secure: false
         # port: 80
 

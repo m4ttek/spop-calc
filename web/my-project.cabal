@@ -1,6 +1,6 @@
-name:              spop-calc-web
-version:           0.1.0
-cabal-version:     >= 1.10
+name:              my-project
+version:           0.0.0
+cabal-version:     >= 1.8
 build-type:        Simple
 
 Flag dev
@@ -85,17 +85,14 @@ library
                  , time
                  , case-insensitive
                  , wai
-                 , spop-calc-sheet               ==0.1.0.0
 
-executable         spop-calc-web
+executable         my-project
     if flag(library-only)
         Buildable: False
 
     main-is:           main.hs
     hs-source-dirs:    app
-    build-depends:     base 
-                     , spop-calc-sheet
-                     , spop-calc-web
+    build-depends:     base, my-project
 
     ghc-options:       -threaded -rtsopts -with-rtsopts=-N
 
@@ -145,7 +142,7 @@ test-suite test
                 CPP
 
     build-depends: base
-                 , spop-calc-web
+                 , my-project
                  , yesod-test >= 1.5.2 && < 1.6
                  , yesod-core
                  , yesod
