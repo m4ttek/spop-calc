@@ -34,20 +34,35 @@ $(function() {
       $progressBar = $('.progress'),
       isProperCSV = #{isProperCSV},
       $table = $('table'),
+      getNextHeaderLetter = function(letter) {
+          var number = parseInt(letter, 36),
+              nextNumber = number + 1,
+              stringRepr = nextNumber.toString(36).replace('0', 'A').replace('1', 'A');
+          return stringRepr.toUpperCase();
+      },
+      addColumn = function(data) {
+        var $thCellClone = $table.find('tr:first th:last').clone();
+        $thCellClone.text(getNextHeaderLetter($thCellClone.text()));
+        $table.find('tr:first').append($thCellClone);
+        var $cellClone = $table.find('td:eq(1)').clone().text("").attr('raw-value', null).attr('title', null);
+        $table.find("tr:gt(0)").append($cellClone);
+      },
+      addRow = function() {
+        $row = $table.find('tr:eq(1)').clone();
+        $row.find('th').text(rowIdx + 1);
+        $table.append($row);
+        $table.editableTableWidget();
+      },
       fillTableWithData = function(data) {
         $.each(data, function(rowIdx, row) {
           var $row = $table.find('tr:eq(' + (rowIdx + 1) + ')');
           if (!$row.length) {
-            $row = $table.find('tr:eq(1)').clone();
-            $row.find('th').text(rowIdx + 1);
-            $table.append($row);
-            $table.editableTableWidget();
+            addRow();
           }
           $.each(row, function(colIdx, cell) {
             var $cell = $row.find('td:eq(' + colIdx + ')');
             if (!$cell.length) {
-              $row = $table.find('tr').first().clone();
-              $table.append($row);
+              addColumn(data);
             }
             $cell.attr('raw-value', cell[1]);
             $cell.attr('title', cell[0]);
