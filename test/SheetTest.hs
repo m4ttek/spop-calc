@@ -61,7 +61,21 @@ funcSwapTest = TestList [TestLabel
                                   [json "0" "0", json "0" "0"],
                                   [json "0" "0", json "0" "0"]])]
 
+funcRemoveRowTest = TestList [TestLabel
+                                "removeFirstRow"
+                                (toJSONData (removeRow 1 (readSheet funcValuesSheet))
+                                 ~?=
+                                 [[json "2" "2", json "2" "2"],
+                                  [json "2" "2", json "2" "2"]])
+                             ,TestLabel
+                                "removeFirstRowDeep"
+                                (toJSONData (removeRow 1 (readSheet funcValuesDeepSheet))
+                                 ~?=
+                                 [[json "4" "=SUM(A2:B2)", json "4" "=MUL(A2:B2)"],
+                                  [json "2" "2", json "2" "2"]])]
+
 
 sheetTests = TestList [cyclicTest
                       ,funcValuesTest
-                      ,funcSwapTest]
+                      ,funcSwapTest
+                      ,funcRemoveRowTest]

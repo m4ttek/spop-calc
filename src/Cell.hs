@@ -7,12 +7,14 @@ module Cell (
     ErrorType (ParseFail, CyclicDependency),
     CellContent(FuncCell, NumberCell, StringCell, ErrorCell),
     Cell (Cell),
+    getColumn,
+    getRow,
     getCellContent,
     modifiableCellContent,
     getCellOrigin,
     getFuncParamCords,
     isFuncCell,
-    doesParamContainsCord,
+    doesParamContainCord,
     containsCord,
     getNumValue,
     sumNT,
@@ -100,7 +102,7 @@ modifiableCellContent (FuncCell funcName funcParams _) = let func | funcName == 
                                                              param (RangeParam a b) =  cordToStr a ++ ":" ++  cordToStr b
                                                              param (OneCell a) = cordToStr a
                                                              params = intercalate ";" (map param funcParams)
-                                                          in "=" ++ func ++ "(" ++ params ++ ")"
+                                                          in map toUpper ("=" ++ func ++ "(" ++ params ++ ")")
 -- zwraca treść komórki wpisaną przez użytkownika
 getCellOrigin :: Cell -> String
 getCellOrigin (Cell _ origin) = origin
@@ -130,27 +132,27 @@ getFuncParamCords (OneCell cord)                    = [cord]
 getFuncParamCords rangeParam@(RangeParam firstCord secondCord)
     = [CellCord col row | col <- _getRange getColumn rangeParam, row <- _getRange getRow rangeParam]
 
+
 -- sprawdza czy komórka jest pośród parametru funkcji
-doesParamContainsCord :: CellCord -> FuncParam -> Bool
-doesParamContainsCord cord rangeParam@(RangeParam x y)
+doesParamContainCord :: CellCord -> FuncParam -> Bool
+doesParamContainCord cord rangeParam@(RangeParam x y)
     = let insideColumn = _in getColumn cord rangeParam
           insideRow = _in getRow cord rangeParam
      in insideColumn && insideRow
-doesParamContainsCord cord (OneCell x) = getColumn cord == getColumn x && getRow cord == getRow x
+doesParamContainCord cord (OneCell x) = getColumn cord == getColumn x && getRow cord == getRow x
 
 
 -- jak wyżej tylko dla wszystkich parametrów
 containsCord :: CellCord -> FuncParams -> Bool
 containsCord x []     = False
-containsCord x params = any (doesParamContainsCord x) params
-
+containsCord x params = any (doesParamContainCord x) params
 
 -- Implementacja indeksowania po CellCordzie przy pomocy powyższych funkcji
 instance Ix CellCord where
     -- The list of values in the subrange defined by a bounding pair.
     range (cordA,cordB) = getFuncParamCords (RangeParam cordA cordB)
     -- Returns True the given subscript lies in the range defined the bounding pair
-    inRange (cordA,cordB) toCheck = doesParamContainsCord toCheck (RangeParam cordA cordB)
+    inRange (cordA,cordB) toCheck = doesParamContainCord toCheck (RangeParam cordA cordB)
     -- The position of a subscript in the subrange.
     index (cordA,cordB) toFind = let rangeParam = RangeParam cordA cordB
                                      startCol = _start getColumn rangeParam

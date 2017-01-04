@@ -62,7 +62,7 @@ putSheetcolR col = do
     updateAndSaveSheet $ extendSheetByColumn col
 
 deleteSheetrowR :: Int -> Handler Value
-deleteSheetrowR row = do updateAndSaveSheet id
+deleteSheetrowR row = do updateAndSaveSheet $ removeRow row
 
 deleteSheetcolR :: Int -> Handler Value
-deleteSheetcolR col = do updateAndSaveSheet id
+deleteSheetcolR col = do updateAndSaveSheet $ id

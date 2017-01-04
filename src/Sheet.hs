@@ -12,6 +12,7 @@ module Sheet (
     JSONSheet,
     toJSONData,
     alterCell,
+    removeRow,
     fixCyclicDeps,
     findFuncValues
 ) where
@@ -222,3 +223,63 @@ alterCell newCord newValue sheet@(Sheet dim content) =
         -- podmina w tablicy z koordynatami
         swappedContent = Sheet dim (inContent // [(newCord, parseCell newValue)])
     in findFuncValues $ fixCyclicDeps swappedContent
+
+doesRowAfectParam :: Int -> FuncParam -> Bool
+doesRowAfectParam row rangeParam@(RangeParam x y)
+    = max (getRow x) (getRow y) >= row
+doesRowAfectParam row (OneCell cord) = getRow cord >= row
+    
+doesColAfectParam :: Int -> FuncParam -> Bool
+doesColAfectParam col rangeParam@(RangeParam x y) 
+    = max (getColumn x) (getColumn y) >= col
+doesColAfectParam col (OneCell cord) = getColumn cord >= col
+
+_fixRowCelDeps row (Cell (FuncCell funcName params value) originValue)
+  = let oneRow (OneCell _) = True
+        oneRow (RangeParam x y) = getRow x == getRow y
+        -- pierwszy filer wyrzuc wszystkich samotnikow - jeden wiersz
+        params2 = filter (\param-> True) params
+        mapParam (RangeParam x y) = let topRow = min (getRow x) (getRow y)
+                                        bottomRow = max (getRow x) (getRow y)
+                                        leftCol = min (getColumn x) (getColumn y)
+                                        rightCol = max (getColumn x) (getColumn y)
+                                        newTopRow | topRow > row = topRow - 1
+                                                  | otherwise = topRow
+                                        newBottomRow | bottomRow > row = bottomRow - 1
+                                                     | otherwise = bottomRow
+                                    in RangeParam (CellCord leftCol newTopRow)
+                                                  (CellCord rightCol newBottomRow)
+        -- nastepnie przemuj te parametry które zachaczają o wiersz
+        params3 = map (\param-> if doesRowAfectParam row param then
+                                  mapParam param
+                                else 
+                                  param) params2
+        funcContent = FuncCell funcName params3 value
+   in (Cell funcContent (modifiableCellContent funcContent))
+_fixRowCelDeps row cell = cell
+
+--usuwa wiersz komorki
+removeRow :: Int -> Sheet -> Sheet
+removeRow rowNum sheet@(Sheet dim content) =
+  let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
+      (Sheet _ inContent) =  (clearCyclicErrors . clearFuncValues) sheet
+      listCellCord = assocs inContent
+      -- wyrzuc wiersz
+      withoutRow = filter (\(cord,_) -> getRow cord /= rowNum) listCellCord
+      -- pozamieniaj współrzedne niższych
+      mappedCordsLower = map (\(cord@(CellCord col row),cell) -> 
+                                if row > rowNum then
+                                  (CellCord col (row - 1), cell)
+                                else
+                                  (cord,cell)) withoutRow
+      -- zwin do tablicy
+      mappedCordArray = array ((CellCord 1 1), CellCord (getWidth newDim) (getHeight newDim)) mappedCordsLower 
+      -- pozmieniaj treść komórek
+      mappedFuncArray = _mapArray (_fixRowCelDeps rowNum) mappedCordArray
+      -- przelicz nowy wymiar
+      newDim = Dim (getWidth dim) (getHeight dim - 1)
+      -- stwórz nowa tablice
+      newSheet = Sheet newDim mappedFuncArray
+  in findFuncValues $ fixCyclicDeps newSheet
+
+

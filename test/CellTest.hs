@@ -15,8 +15,8 @@ yesRangeCellTest = TestCase (assertBool "contains" (containsCord (CellCord 2 2) 
 noRangeCellTest = TestCase (assertBool "doesntContain" (not (containsCord (CellCord 3 4) [RangeParam (CellCord 1 1) (CellCord 3 3)])))
 
 generateParamsTest = getFuncParamCords (RangeParam (CellCord 1 1) (CellCord 2 2)) ~?= [CellCord 1 1, CellCord 1 2, CellCord 2 1, CellCord 2 2]
-sumFuncToNameTest = modifiableCellContent (FuncCell SUMFunc [RangeParam (CellCord 1 1) (CellCord 2 2)] Nothing) ~?= "=sum(a1:b2)"
-sumFuncToNameToParamsTest = modifiableCellContent (FuncCell SUMFunc [RangeParam (CellCord 1 1) (CellCord 2 2), OneCell (CellCord 3 3)] Nothing) ~?= "=sum(a1:b2;c3)"
+sumFuncToNameTest = modifiableCellContent (FuncCell SUMFunc [RangeParam (CellCord 1 1) (CellCord 2 2)] Nothing) ~?= "=SUM(A1:B2)"
+sumFuncToNameToParamsTest = modifiableCellContent (FuncCell SUMFunc [RangeParam (CellCord 1 1) (CellCord 2 2), OneCell (CellCord 3 3)] Nothing) ~?= "=SUM(A1:B2;C3)"
 
 
 cellTests = TestList [TestLabel "oneCellYes" yesOneCellTest
