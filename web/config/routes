@@ -13,5 +13,5 @@
 
 /sheet/#Int/#Int/#String UpdatesheetR PUT
 
-/sheet/row/#Int AddsheetrowR PUT
-/sheet/col/#Int AddsheetcolR PUT
+/sheet/row/#Int SheetrowR PUT DELETE
+/sheet/col/#Int SheetcolR PUT DELETE

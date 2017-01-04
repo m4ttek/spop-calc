@@ -48,14 +48,14 @@ funcValuesTest = TestList [TestLabel
 
 funcSwapTest = TestList [TestLabel
                                 "funcValuesTest"
-                                (toJSONData (alterCell (readSheet funcValuesDeepSheet) (CellCord 2 2) "8")
+                                (toJSONData (alterCell (CellCord 2 2) "8" (readSheet funcValuesDeepSheet))
                                  ~?=
                                  [[json "16" "=SUM(A2:B3)", json "4" "=AVG(A2:B3)"],
                                   [json "4" "=SUM(A3:B3)", json "8" "8"],
                                   [json "2" "2", json "2" "2"]])
                       , TestLabel
                                 "funcValuesFixCycles"
-                                (toJSONData (alterCell (readSheet cyclicSimpleSheet) (CellCord 2 1) "2")
+                                (toJSONData (alterCell (CellCord 2 1) "2" (readSheet cyclicSimpleSheet))
                                  ~?=
                                  [[json "2" "=SUM(B1)", json "2" "2"],
                                   [json "0" "0", json "0" "0"],

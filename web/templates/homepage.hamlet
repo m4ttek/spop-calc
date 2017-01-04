@@ -30,7 +30,7 @@
                                 <th>
                                     #
                                 $forall columnNum <- columns
-                                    <th>
+                                    <th scope=col>
                                         #{columnNum}
                         $forall row <- rows
                             <tr>

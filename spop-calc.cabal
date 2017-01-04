@@ -12,7 +12,7 @@ copyright:           2016 Kamiński & Mościcki
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
-cabal-version:       >=1.10
+cabal-version:       >=1.8
 
 library
   hs-source-dirs:      src
@@ -32,14 +32,6 @@ library
                      , aeson
   default-language:    Haskell2010
 
-executable spop-calc-exe
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -O2
-  build-depends:       base
-                     , ansi-terminal
-                     , spop-calc
-  default-language:    Haskell2010
 
 test-suite spop-calc-test
   type:                exitcode-stdio-1.0
@@ -47,7 +39,7 @@ test-suite spop-calc-test
   main-is:             Spec.hs
   build-depends:       base
                      , HUnit
-                     , parsec == 3.1.8
+                     , parsec == 3.1.11
                      , spop-calc
   other-modules:       CellParserTest
                      , CellTest
@@ -63,8 +55,8 @@ benchmark spop-calc-bench
                   , criterion
                   , random
                   , spop-calc
-                  , parsec == 3.1.8
-                  , array == 0.5.1.1
+                  , parsec == 3.1.11
+                  , array == 0.5.1.0
   other-modules:    Cell
                   , CellParser
                   , Sheet

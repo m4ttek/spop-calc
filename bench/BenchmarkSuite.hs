@@ -18,7 +18,7 @@ deepSheet = [["1" | _ <- [1..100]]
 
 readSheetBench = length . toJSONData . readSheet
 
-readSheetBenchWithAlter sheet = (length . toJSONData) (alterCell (readSheet sheet) (CellCord 1 1) "2")
+readSheetBenchWithAlter sheet = (length . toJSONData) (alterCell (CellCord 1 1) "2" (readSheet sheet))
 
 
 {-

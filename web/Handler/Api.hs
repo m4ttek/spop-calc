@@ -53,10 +53,16 @@ putUpdatesheetR :: Int -> Int -> String -> Handler Value
 putUpdatesheetR row col newValue = do
     updateAndSaveSheet $ alterCellWithPossibleExtension row col (unpack $ Text.strip $ pack newValue)
 
-putAddsheetrowR :: Int -> Handler Value
-putAddsheetrowR row = do
+putSheetrowR :: Int -> Handler Value
+putSheetrowR row = do
     updateAndSaveSheet $ extendSheetByRow row
 
-putAddsheetcolR :: Int -> Handler Value
-putAddsheetcolR col = do
+putSheetcolR :: Int -> Handler Value
+putSheetcolR col = do
     updateAndSaveSheet $ extendSheetByColumn col
+
+deleteSheetrowR :: Int -> Handler Value
+deleteSheetrowR row = do updateAndSaveSheet id
+
+deleteSheetcolR :: Int -> Handler Value
+deleteSheetcolR col = do updateAndSaveSheet id
