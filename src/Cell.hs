@@ -8,6 +8,7 @@ module Cell (
     CellContent(FuncCell, NumberCell, StringCell, ErrorCell),
     Cell (Cell),
     getCellContent,
+    modifiableCellContent,
     getCellOrigin,
     getFuncParamCords,
     isFuncCell,
@@ -21,6 +22,9 @@ module Cell (
 
 import           Data.Array
 import           Data.Ratio
+import           Data.Char
+import           Data.List
+import           ShowRational
 
 -- położenie (0,0) to lewy górny róg
 -- x - kolumna
@@ -29,6 +33,17 @@ data CellCord = CellCord Int Int deriving (Ord, Eq, Show)
 
 getColumn :: CellCord -> Int
 getColumn (CellCord col _) = col
+
+
+-- rozmiar alfabetu
+alphSize :: Int
+alphSize = ord 'z' - ord 'a' + 1
+
+-- konwertuje kolumnę do litery
+columnToLetter :: Int -> String
+columnToLetter col | col == 0        = [] 
+                   | col <= alphSize = [chr (ord 'a' + col - 1)] 
+                   | otherwise  = columnToLetter (col `div` alphSize) ++ columnToLetter (col `mod` alphSize)
 
 getRow :: CellCord -> Int
 getRow (CellCord _ row) = row
@@ -69,6 +84,23 @@ data Cell = Cell CellContent String deriving (Eq, Show)
 getCellContent :: Cell -> CellContent
 getCellContent (Cell content _) = content
 
+
+-- konwertuje zawartość komorki do elementu które można modyfikować
+
+modifiableCellContent :: CellContent -> String
+modifiableCellContent (NumberCell (IntVal val)) = show val
+modifiableCellContent (NumberCell (DecimalVal val)) = showRational (Just 8) val
+modifiableCellContent (StringCell val) = val
+modifiableCellContent (ErrorCell _ org) = org
+modifiableCellContent (FuncCell funcName funcParams _) = let func | funcName == SUMFunc = "sum"
+                                                                  | funcName == MULFunc = "mul"
+                                                                  | funcName == AVGFunc = "avg"
+                                                                  | otherwise = error "func not found"
+                                                             cordToStr (CellCord col row) = columnToLetter col ++ show row
+                                                             param (RangeParam a b) =  cordToStr a ++ ":" ++  cordToStr b
+                                                             param (OneCell a) = cordToStr a
+                                                             params = intercalate ";" (map param funcParams)
+                                                          in "=" ++ func ++ "(" ++ params ++ ")"
 -- zwraca treść komórki wpisaną przez użytkownika
 getCellOrigin :: Cell -> String
 getCellOrigin (Cell _ origin) = origin
