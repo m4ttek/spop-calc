@@ -218,12 +218,7 @@ clearCyclicErrors sheet@(Sheet dim content) = let clearCycErrorCell (Cell (Error
 alterCell :: CellCord -> String -> Sheet -> Sheet
 alterCell newCord newValue sheet@(Sheet dim content) =
     let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
-        inSheet =  (clearCyclicErrors . clearFuncValues) sheet
-        -- (CellCord, Cell) -> (CellCord, Cell)
-        trySwapCell cord cell = if cord == newCord then
-                                   parseCell newValue
-                                else
-                                   cell
+        (Sheet _ inContent) =  (clearCyclicErrors . clearFuncValues) sheet
         -- podmina w tablicy z koordynatami
-        swappedContent = mapCellWithCord trySwapCell inSheet
+        swappedContent = Sheet dim (inContent // [(newCord, parseCell newValue)])
     in findFuncValues $ fixCyclicDeps swappedContent
