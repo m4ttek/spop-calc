@@ -61,7 +61,7 @@ instance Measurable Sheet where
 createEmptySheet :: Int -> Int -> Sheet
 createEmptySheet width height = let bounds = (CellCord 1 1, CellCord width height)
                                     content = array bounds [(CellCord columnNum rowNum, Cell (StringCell "") "")
-                                                            | rowNum <- [1..width], columnNum <- [1..height]]
+                                                            | rowNum <- [1..height], columnNum <- [1..width]]
                                 in Sheet (createDim width height) content
 
 
@@ -259,8 +259,8 @@ _fixRowCelDeps row (Cell (FuncCell funcName params value) originValue)
 _fixRowCelDeps row cell = cell
 
 --usuwa wiersz komorki
-removeRow :: Int -> Sheet -> Sheet
-removeRow rowNum sheet@(Sheet dim content) =
+_removeRow :: Int -> Sheet -> Sheet
+_removeRow rowNum sheet@(Sheet dim content) =
   let -- odwracamy walidacje i oblczenia - arkusz po sparsowaniu
       (Sheet _ inContent) =  (clearCyclicErrors . clearFuncValues) sheet
       listCellCord = assocs inContent
@@ -281,5 +281,11 @@ removeRow rowNum sheet@(Sheet dim content) =
       -- stwórz nowa tablice
       newSheet = Sheet newDim mappedFuncArray
   in findFuncValues $ fixCyclicDeps newSheet
+
+removeRow :: Int -> Sheet -> Sheet
+removeRow rowNum sheet 
+       | getHeight sheet == 1 && rowNum == 1 = createEmptySheet (getWidth sheet) 1
+       | rowNum > getHeight sheet            = sheet
+       | otherwise                           = _removeRow rowNum sheet
 
 

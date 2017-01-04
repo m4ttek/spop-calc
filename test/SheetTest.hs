@@ -72,7 +72,14 @@ funcRemoveRowTest = TestList [TestLabel
                                 (toJSONData (removeRow 1 (readSheet funcValuesDeepSheet))
                                  ~?=
                                  [[json "4" "=SUM(A2:B2)", json "4" "=MUL(A2:B2)"],
-                                  [json "2" "2", json "2" "2"]])]
+                                  [json "2" "2", json "2" "2"]])
+                             ,TestLabel
+                               "removeUntilEmpty"
+                               (toJSONData (removeRow 1 (
+                                            removeRow 1 (
+                                            removeRow 1 (readSheet funcValuesDeepSheet))))
+                                ~?=
+                                [[json "" "", json "" ""]])]
 
 
 sheetTests = TestList [cyclicTest
