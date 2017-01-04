@@ -32,9 +32,7 @@ $(function() {
       $.ajax({
             url: url,
             method: "DELETE",
-            success: function(data) {
-               tableGetCallback(data);
-            }
+            success: tableGetCallback
       });
   }
 
@@ -62,7 +60,7 @@ $(function() {
         name: 'Remove row',
         callback: function() {
           var row = this.parent()[0].rowIndex;
-          removeLineCollback('row', row); 
+          removeLineCollback('row', row);
         }
       },
     }
@@ -95,11 +93,14 @@ $(function() {
         $table.editableTableWidget();
       },
       fillTableWithData = function(data) {
+        var lastRowIdx = 0,
+            lastColIdx = 0;
         $.each(data, function(rowIdx, row) {
           var $row = $table.find('tr:eq(' + (rowIdx + 1) + ')');
           if (!$row.length) {
             addRow(rowIdx);
           }
+          lastRowIdx = rowIdx;
           $.each(row, function(colIdx, cell) {
             var $cell = $row.find('td:eq(' + colIdx + ')');
             if (!$cell.length) {
@@ -116,8 +117,11 @@ $(function() {
             } else {
               $cell.removeClass('function-cell').removeClass('error-cell');
             }
+            lastColIdx = colIdx;
           });
         });
+        $table.find('tr:gt(0)').find('td:gt(' + lastColIdx + ')').text("").attr('raw-value', null).attr('title', null);
+        $table.find('tr:gt(' + lastRowIdx + ')').find('td:gt(0)').text("").attr('raw-value', null).attr('title', null);
       },
       tableGetCallback = function(data) {
           if ($.type(data) == 'array') {
@@ -129,10 +133,10 @@ $(function() {
         // inicjalizacja tabeli
         $.getJSON('/sheet', tableGetCallback);
         // uruchomienie arkusza
-        $('table').editableTableWidget();
+        $table.editableTableWidget();
 
         // listener na zmianę w komórce tabeli
-        $('table').on('change', 'td', function(evt, newValue) {
+        $table.on('change', 'td', function(evt, newValue) {
           $progressBar.show();
 
           var col = evt.currentTarget.cellIndex,
@@ -150,7 +154,7 @@ $(function() {
         });
 
         // listener na podwójny klik w header kolumny lub wiersza
-        $('table').on('dblclick', 'th', function(evt) {
+        $table.on('dblclick', 'th', function(evt) {
           $progressBar.show();
 
           var col = evt.currentTarget.cellIndex,
@@ -162,12 +166,12 @@ $(function() {
             success: tableGetCallback
           });
         });
-        $('table').on('click', '.function-cell', function() {
+        $table.on('click', '.function-cell', function() {
           var $this = $(this);
           $this.text($this.attr('raw-value'));
         });
 
-        $('table').on('focusout', '.function-cell', function() {
+        $table.on('focusout', '.function-cell', function() {
           var $this = $(this);
           $this.text($this.attr('title'));
         });
