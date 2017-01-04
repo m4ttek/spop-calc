@@ -234,29 +234,59 @@ doesColAfectParam col rangeParam@(RangeParam x y)
     = max (getColumn x) (getColumn y) >= col
 doesColAfectParam col (OneCell cord) = getColumn cord >= col
 
-_fixRowCelDeps row (Cell (FuncCell funcName params value) originValue)
-  = let oneRow (OneCell _) = True
-        oneRow (RangeParam x y) = getRow x == getRow y
-        -- pierwszy filer wyrzuc wszystkich samotnikow - jeden wiersz
-        params2 = filter (\param-> True) params
-        mapParam (RangeParam x y) = let topRow = min (getRow x) (getRow y)
-                                        bottomRow = max (getRow x) (getRow y)
-                                        leftCol = min (getColumn x) (getColumn y)
-                                        rightCol = max (getColumn x) (getColumn y)
-                                        newTopRow | topRow > row = topRow - 1
-                                                  | otherwise = topRow
-                                        newBottomRow | bottomRow > row = bottomRow - 1
-                                                     | otherwise = bottomRow
-                                    in RangeParam (CellCord leftCol newTopRow)
-                                                  (CellCord rightCol newBottomRow)
-        -- nastepnie przemuj te parametry które zachaczają o wiersz
-        params3 = map (\param-> if doesRowAfectParam row param then
-                                  mapParam param
+data LineRemover = LR {onLine :: (FuncParam -> Bool)
+                      ,mapFuncParam :: (Int -> FuncParam -> FuncParam)
+                      ,afectCell :: (Int -> FuncParam -> Bool)
+                      ,cordLowerMapper :: (Int -> (CellCord, Cell) -> (CellCord,Cell)) }
+
+-- podmienia parametry żeby zawsze było (lewy górny, prawy dolny
+fixRangeParam (RangeParam x y)
+     = let topRow = min (getRow x) (getRow y)
+           bottomRow = max (getRow x) (getRow y)
+           leftCol = min (getColumn x) (getColumn y)
+           rightCol = max (getColumn x) (getColumn y)
+       in RangeParam (CellCord leftCol topRow) (CellCord rightCol bottomRow)
+
+onRow (OneCell _) = True
+onRow (RangeParam x y) = getRow x == getRow y
+
+mapRowParam row (OneCell (CellCord x y)) 
+    = let newY | row < y = y - 1
+               | otherwise = y
+      in OneCell (CellCord x newY)
+                                         
+mapRowParam row rangeParam@RangeParam{} 
+    = let RangeParam (CellCord leftCol topRow) (CellCord rightCol bottomRow) = fixRangeParam rangeParam
+          newTopRow | topRow > row = topRow - 1
+                    | otherwise = topRow
+          newBottomRow | bottomRow > row = bottomRow - 1
+                       | otherwise = bottomRow
+      in RangeParam (CellCord leftCol newTopRow)
+                    (CellCord rightCol newBottomRow)
+
+rowCordMapper :: Int -> (CellCord, Cell) -> (CellCord, Cell)
+rowCordMapper rowNum (cord@(CellCord col row),cell)
+         | row > rowNum = (CellCord col (row - 1),cell)
+         | otherwise = (cord,cell)
+
+rowRemover = LR {onLine = onRow
+                ,mapFuncParam = mapRowParam
+                ,afectCell = doesRowAfectParam
+                ,cordLowerMapper = rowCordMapper}
+                 
+_fixCellDeps :: Int -> LineRemover -> Cell -> Cell
+_fixCellDeps line lineRemover (Cell (FuncCell funcName params value) originValue)
+  = let -- pierwszy filer wyrzuc wszystkich samotnikow - jeden wiersz, jedna kolumna
+        params2 = filter (onLine lineRemover) params
+        -- nastepnie przesuń te parametry których są związne z wierszem
+        params3 = map (\param-> if (afectCell lineRemover) line param then
+                                   (mapFuncParam lineRemover) line param
                                 else 
                                   param) params2
+        -- opakuj treść
         funcContent = FuncCell funcName params3 value
    in (Cell funcContent (modifiableCellContent funcContent))
-_fixRowCelDeps row cell = cell
+_fixCellDeps _ _ cell = cell
 
 --usuwa wiersz komorki
 _removeRow :: Int -> Sheet -> Sheet
@@ -267,15 +297,11 @@ _removeRow rowNum sheet@(Sheet dim content) =
       -- wyrzuc wiersz
       withoutRow = filter (\(cord,_) -> getRow cord /= rowNum) listCellCord
       -- pozamieniaj współrzedne niższych
-      mappedCordsLower = map (\(cord@(CellCord col row),cell) -> 
-                                if row > rowNum then
-                                  (CellCord col (row - 1), cell)
-                                else
-                                  (cord,cell)) withoutRow
+      mappedCordsLower = map ((cordLowerMapper rowRemover) rowNum) withoutRow
       -- zwin do tablicy
       mappedCordArray = array ((CellCord 1 1), CellCord (getWidth newDim) (getHeight newDim)) mappedCordsLower 
       -- pozmieniaj treść komórek
-      mappedFuncArray = _mapArray (_fixRowCelDeps rowNum) mappedCordArray
+      mappedFuncArray = _mapArray (_fixCellDeps rowNum rowRemover) mappedCordArray
       -- przelicz nowy wymiar
       newDim = Dim (getWidth dim) (getHeight dim - 1)
       -- stwórz nowa tablice
