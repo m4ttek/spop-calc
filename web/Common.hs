@@ -64,7 +64,7 @@ extendRawSheetByColumn col width rawSheet =
 extendSheetByColumn :: Int -> Sheet -> Sheet
 extendSheetByColumn column sheet@(Sheet (Dim width _) _) =
     let rawSheet = writeSheet sheet :: [[String]] in
-    readSheet $ extendRawSheetByColumn column width rawSheet
+    readSheet $ fillTable $ extendRawSheetByColumn column width rawSheet
 
 -- rozszerza reprezentację arkusza o kolumnę w podanym miejscu
 extendRawSheetByRow :: Int -> Int -> [[String]] -> [[String]]
