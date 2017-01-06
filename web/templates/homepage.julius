@@ -89,6 +89,7 @@ $(function() {
       addRow = function(rowIdx) {
         $row = $table.find('tr:eq(1)').clone();
         $row.find('th').text(rowIdx + 1);
+        $row.find('td').text('').attr('raw-value', null).attr('title', null);
         $table.append($row);
         $table.editableTableWidget();
       },
@@ -103,7 +104,7 @@ $(function() {
           lastRowIdx = rowIdx;
           $.each(row, function(colIdx, cell) {
             var $cell = $row.find('td:eq(' + colIdx + ')');
-            if (!$cell.length) {
+            if (!$cell.length && rowIdx == 0) {
               addColumn(data);
             }
             $cell.attr('raw-value', cell[1]);

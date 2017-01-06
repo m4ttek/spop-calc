@@ -10,6 +10,10 @@ td {
     white-space: nowrap;
 }
 
+th:hover {
+    background-color: gainsboro;
+}
+
 .function-cell {
     background-color: antiquewhite;
 }
