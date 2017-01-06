@@ -1,6 +1,6 @@
 
 <!-- Static navbar -->
-<nav .navbar.navbar-default.navbar-static-top>
+<nav .navbar.navbar-default.navbar-fixed-top>
     <div .container-fluid>
         <div .navbar-header>
             <a .navbar-brand href="#">

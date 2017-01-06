@@ -15,7 +15,7 @@
                 <div .bs-callout.text-info bs-callout-warn well>
                     #1 Tip: you can do right click on any sheet cell to invoke context menu with possible functions.
                 <div .bs-callout.text-info bs-callout-warn well>
-                    #2 Tip: you can do double click on head (label) cells to add new column or row.
+                    #2 Tip: you can do double click on head (label) cells to add new column or row. Do a right click on table head or row head to remove.
                 <div .bs-callout.text-info bs-callout-warn well>
                     #3 Tip: functional as well as erroneous cells differentiate from others with background color.
                 <div .bs-callout.text-info bs-callout-warn well>

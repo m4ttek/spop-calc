@@ -120,8 +120,8 @@ $(function() {
             lastColIdx = colIdx;
           });
         });
-        $table.find('tr:gt(0)').find('td:gt(' + lastColIdx + ')').text("").attr('raw-value', null).attr('title', null);
-        $table.find('tr:gt(' + lastRowIdx + ')').find('td:gt(0)').text("").attr('raw-value', null).attr('title', null);
+        $table.find('tr:gt(0)').find('td:gt(' + (lastColIdx + 1) + ')').text("").attr('raw-value', null).attr('title', null);
+        $table.find('tr:gt(' + (lastRowIdx + 1)+ ')').find('td:gt(0)').text("").attr('raw-value', null).attr('title', null);
       },
       tableGetCallback = function(data) {
           if ($.type(data) == 'array') {
