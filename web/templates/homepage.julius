@@ -70,7 +70,7 @@ $(function() {
       $uploadFileFormButton = $uploadFile.siblings('#upload-file-button'),
       $downloadFile = $("#download-file"),
       $newSheet = $('#new-sheet'),
-      $progressBar = $('.progress'),
+      $progressBar = $('.fa-spinner'),
       isProperCSV = #{isProperCSV},
       $table = $('table'),
       getNextHeaderLetter = function(letter) {
