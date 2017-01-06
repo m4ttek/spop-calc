@@ -54,7 +54,7 @@ postHomeR = do
 
     when isProperCSV (do
                         sheetBytes <- extractFileBytes submission
-                        let sheetCSV = readSheet $ fillTable $ IOUtil.readCSVAsByteString SEMICOLON sheetBytes
+                        let sheetCSV = readSheet $ fillTable $ IOUtil.readCSVAsByteString COMMA sheetBytes
                             filename = fileName (fromJust submission)
                         saveSheetFile filename sheetCSV)
     defaultLayout $ do
@@ -83,4 +83,4 @@ getDownloadR = do
             do
                 let (SheetFile filename sheet) = fromJust maybeSheet :: SheetFile
                 addHeader "Content-Disposition" $ Text.concat [ "attachment; filename=\"", filename, "\""]
-                sendResponse (TypedContent "text/csv" $ toContent $ writeCSVAsByteString SEMICOLON $ writeSheet sheet)
+                sendResponse (TypedContent "text/csv" $ toContent $ writeCSVAsByteString COMMA $ writeSheet sheet)
